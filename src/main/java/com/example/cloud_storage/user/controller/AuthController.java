@@ -1,8 +1,14 @@
 package com.example.cloud_storage.user.controller;
 
+import com.example.cloud_storage.user.dto.UserRequestDto;
+import com.example.cloud_storage.user.dto.UserResponseDto;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,13 +22,19 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/auth/sign-up")
-    public void registration(@RequestBody User user) {
-        userService.create(user);
+    public ResponseEntity<UserResponseDto> registration(@Valid @RequestBody UserRequestDto userRequestDto,
+                                                        HttpServletResponse response) {
+        User user = userService.create(userRequestDto);
+        return new ResponseEntity<>(
+                new UserResponseDto(user.getUsername()),
+                HttpStatus.CREATED
+        );
     }
 
     @PostMapping("/auth/sign-in")
-    public void authorization(@RequestBody User user) {
-        userService.getUser(user);
+    public void authorization(@Valid @RequestBody UserRequestDto userRequestDto,
+                              HttpServletResponse response) {
+        userService.getUser(userRequestDto);
     }
 
     @PostMapping("/auth/sign-out")
