@@ -4,7 +4,7 @@ import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.user.dto.UserResponseDto;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.service.UserService;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,8 +23,9 @@ public class AuthController {
 
     @PostMapping("/auth/sign-up")
     public ResponseEntity<UserResponseDto> registration(@Valid @RequestBody UserRequestDto userRequestDto,
-                                                        HttpServletResponse response) {
+                                                        HttpSession session) {
         User user = userService.create(userRequestDto);
+        session.setAttribute("username", user.getUsername());
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.CREATED
@@ -32,13 +33,19 @@ public class AuthController {
     }
 
     @PostMapping("/auth/sign-in")
-    public void authorization(@Valid @RequestBody UserRequestDto userRequestDto,
-                              HttpServletResponse response) {
-        userService.getUser(userRequestDto);
+    public ResponseEntity<UserResponseDto> authorization(@Valid @RequestBody UserRequestDto userRequestDto,
+                                  HttpSession session) {
+        User user = userService.getUser(userRequestDto);
+        session.setAttribute("username", user.getUsername());
+        return new ResponseEntity<>(
+                new UserResponseDto(user.getUsername()),
+                HttpStatus.OK
+        );
     }
 
     @PostMapping("/auth/sign-out")
-    public void logout() {
-
+    public ResponseEntity<Void> logout(HttpSession session) {
+        session.invalidate();
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
