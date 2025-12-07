@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +36,7 @@ public class AuthController {
     @PostMapping("/auth/sign-in")
     public ResponseEntity<UserResponseDto> authorization(@Valid @RequestBody UserRequestDto userRequestDto,
                                   HttpSession session) {
-        User user = userService.getUser(userRequestDto);
+        UserDetails user = userService.loadUserByUsername(userRequestDto.getUsername());
         session.setAttribute("username", user.getUsername());
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
