@@ -11,6 +11,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(UnauthorizedUserException.class)
+    public ResponseEntity<?> handleNotFound(UnauthorizedUserException exception) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<?> handleNotFound(UsernameNotFoundException exception) {
         return ResponseEntity

@@ -4,6 +4,7 @@ import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.user.dto.UserResponseDto;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -17,36 +18,34 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private UserService userService;
 
-    @PostMapping("/auth/sign-up")
+    @PostMapping("/sign-up")
     public ResponseEntity<UserResponseDto> registration(@Valid @RequestBody UserRequestDto userRequestDto,
-                                                        HttpSession session) {
-        User user = userService.create(userRequestDto);
-        session.setAttribute("username", user.getUsername());
+                                                        HttpServletRequest request) {
+        User user = userService.create(userRequestDto, request);
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.CREATED
         );
     }
 
-    @PostMapping("/auth/sign-in")
+    @PostMapping("/sign-in")
     public ResponseEntity<UserResponseDto> authorization(@Valid @RequestBody UserRequestDto userRequestDto,
-                                  HttpSession session) {
+                                                         HttpServletRequest request) {
+        userService.authenticate(userRequestDto);
         UserDetails user = userService.loadUserByUsername(userRequestDto.getUsername());
-        session.setAttribute("username", user.getUsername());
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.OK
         );
     }
 
-    @PostMapping("/auth/sign-out")
+    @PostMapping("/sign-out")
     public ResponseEntity<Void> logout(HttpSession session) {
-        session.invalidate();
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

@@ -17,7 +17,7 @@ import lombok.Setter;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @NotBlank(message = "Username cannot be empty!")
     @Size(
@@ -34,6 +34,9 @@ public class User {
             message = "Length of the password must be from 3 to 100 characters!"
     )
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
     private Role role;
 }
 

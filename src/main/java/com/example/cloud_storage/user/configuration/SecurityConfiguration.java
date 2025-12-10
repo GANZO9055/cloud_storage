@@ -25,11 +25,14 @@ public class SecurityConfiguration {
                 .csrf(CsrfConfigurer::disable)
                 .authorizeHttpRequests(
                         auth -> auth
-                                        .requestMatchers("/api/auth/sing-up", "/api/auth/sing-in").permitAll()
+                                        .requestMatchers("/api/auth/sign-up", "/api/auth/sign-in").permitAll()
                                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                         .anyRequest()
                                         .authenticated()
                 )
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/sign-out")
+                        .deleteCookies("JSESSIONID"))
                 .formLogin(AbstractHttpConfigurer::disable);
         return httpSecurity.build();
     }

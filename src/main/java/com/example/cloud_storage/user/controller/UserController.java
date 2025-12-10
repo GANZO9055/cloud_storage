@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/user")
 public class UserController {
-    @GetMapping("/user/me")
+    @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentUser(Authentication authentication) {
         return new ResponseEntity<>(
                 new UserResponseDto(authentication.getName()),
