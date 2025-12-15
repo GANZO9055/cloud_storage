@@ -3,6 +3,7 @@ package com.example.cloud_storage.user.service;
 import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.user.exception.UnauthorizedUserException;
 import com.example.cloud_storage.user.exception.UserAlreadyExistsException;
+import com.example.cloud_storage.user.exception.UsernameNotFoundException;
 import com.example.cloud_storage.user.model.Role;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
@@ -16,7 +17,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
