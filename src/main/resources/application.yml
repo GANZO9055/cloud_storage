@@ -26,3 +26,12 @@ spring:
     password: ${DB_PASSWORD}
     enabled: true
     drop-first: false
+
+logging:
+  file:
+    name: logs
+  level:
+    root: INFO
+    com.example.cloud_storage: DEBUG
+  pattern:
+    file: "%d{yyyy-MM-dd HH-mm-ss} %-5level %logger{100} - %msg%n"
