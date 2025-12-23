@@ -10,7 +10,7 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
-public class MinioDirectoryService implements DirectoryService {
+public class DirectoryServiceImpl implements DirectoryService {
 
     private StorageService storageService;
 
