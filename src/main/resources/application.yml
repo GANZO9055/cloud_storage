@@ -29,7 +29,7 @@ spring:
 
 logging:
   file:
-    name: logs
+    name: logs/storage.log
   level:
     root: INFO
     com.example.cloud_storage: DEBUG
