@@ -1,4 +1,4 @@
-package com.example.cloud_storage.user.configuration;
+package com.example.cloud_storage.user.config;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @AllArgsConstructor
-public class SecurityConfiguration {
+public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
