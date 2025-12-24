@@ -5,7 +5,7 @@ import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
 
 import java.util.List;
 
-public interface DirectoryService {
-    DirectoryResponseDto createDirectory(String folderName);
-    List<Resource> getResource(String folderName);
+public interface FolderService {
+    DirectoryResponseDto createFolder(String folderName);
+    List<Resource> getFolderContents(String folderName);
 }

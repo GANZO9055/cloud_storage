@@ -10,17 +10,17 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
-public class DirectoryServiceImpl implements DirectoryService {
+public class FolderServiceImpl implements FolderService {
 
     private StorageService storageService;
 
     @Override
-    public DirectoryResponseDto createDirectory(String folderName) {
-        return storageService.create(folderName);
+    public DirectoryResponseDto createFolder(String folderName) {
+        return storageService.createFolder(folderName);
     }
 
     @Override
-    public List<Resource> getResource(String folderName) {
-        return storageService.getResource(folderName);
+    public List<Resource> getFolderContents(String folderName) {
+        return storageService.getResourceContents(folderName);
     }
 }
