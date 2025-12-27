@@ -1,46 +1,142 @@
 package com.example.cloud_storage.minio.storage;
 
 import com.example.cloud_storage.minio.dto.Resource;
+import com.example.cloud_storage.minio.dto.Type;
 import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import com.example.cloud_storage.minio.dto.file.FileResponseDto;
+import com.example.cloud_storage.user.security.SecurityUtils;
+import io.minio.*;
+import io.minio.messages.Item;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class MinioStorageService implements StorageService {
 
+    private static final String BUCKET = "user-files";
+    private static final String ROOT_FOLDER = "user-%s-files/";
+
     @Autowired
     private MinioClient minioClient;
-    private String firstFolderName;
 
-    @Override
-    public void userRoot(String firstFolderName) {
-        this.firstFolderName = firstFolderName;
-        init();
-    }
-
-    public void init() {
+    @PostConstruct
+    public void initStorage() {
         try {
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .object(firstFolderName)
+            boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder()
+                            .bucket(BUCKET)
                             .build()
             );
+            if (!exists) {
+                minioClient.makeBucket(
+                        MakeBucketArgs.builder()
+                                .bucket(BUCKET)
+                                .build()
+                );
+            }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Cannot create MinIO bucket!", e);
         }
     }
 
     @Override
-    public DirectoryResponseDto createFolder(String folderName) {
-        return null;
+    public void createRootFolder() {
+        String rootFolder = createRootFolderForUser();
+        createFolder(rootFolder);
     }
 
     @Override
-    public List<Resource> getResourceContents(String folderName) {
-        return List.of();
+    public DirectoryResponseDto createFolder(String folderName) {
+        DirectoryResponseDto dto;
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(BUCKET)
+                            .object(folderName)
+                            .stream(
+                                    new ByteArrayInputStream(new byte[0]),
+                                    0,
+                                    -1
+                            )
+                            .build()
+            );
+
+            dto = new DirectoryResponseDto(
+                    folderName,
+                    getFolderNameFromPath(folderName),
+                    Type.DIRECTORY
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return dto;
+    }
+
+    @Override
+    public List<Resource> getFolderContents(String folderName) {
+        Iterable<Result<Item>> items = minioClient.listObjects(
+                ListObjectsArgs.builder()
+                        .bucket(BUCKET)
+                        .prefix(folderName)
+                        .delimiter("/")
+                        .recursive(false)
+                        .build()
+        );
+        return getResourcesFromItems(items);
+    }
+
+    private String createRootFolderForUser() {
+        String number = SecurityUtils.getCurrentUserId().toString();
+        return String.format(ROOT_FOLDER, number);
+    }
+
+    private String getFolderNameFromPath(String folderName) {
+        if (folderName.endsWith("/")) {
+            folderName = folderName.substring(0, folderName.length() - 1);
+        }
+        int index = folderName.lastIndexOf('/');
+        if (index >= 0) {
+            return folderName.substring(index + 1);
+        }
+        return folderName;
+    }
+
+    private List<Resource> getResourcesFromItems(Iterable<Result<Item>> items) {
+        List<Resource> resources = new ArrayList<>();
+
+        for (Result<Item> result : items) {
+            try {
+                Item item = result.get();
+                String path = item.objectName();
+                String name = getFolderNameFromPath(path);
+
+                if (item.isDir()) {
+                    resources.add(
+                            new DirectoryResponseDto(
+                                    path,
+                                    name,
+                                    Type.DIRECTORY
+                            )
+                    );
+                } else {
+                    resources.add(
+                            new FileResponseDto(
+                                    path,
+                                    name,
+                                    item.size(),
+                                    Type.FILE
+                            )
+                    );
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return resources;
     }
 }

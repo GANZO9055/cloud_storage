@@ -21,6 +21,6 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public List<Resource> getFolderContents(String folderName) {
-        return storageService.getResourceContents(folderName);
+        return storageService.getFolderContents(folderName);
     }
 }
