@@ -70,9 +70,8 @@ public class UserServiceImpl implements UserService {
             log.warn("Authentication failed: invalid password for username={}", userRequestDto.getUsername());
             throw new UnauthorizedUserException("Invalid password!");
         }
-
         createCookie(userRequestDto, request, response);
-        storageService.userRoot("user-" + user.getId() + "-files/");
+        storageService.createRootFolder();
         return user;
     }
 
