@@ -3,6 +3,7 @@ package com.example.cloud_storage.minio.service.directory;
 import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
 import com.example.cloud_storage.minio.storage.StorageService;
+import com.example.cloud_storage.minio.validation.ValidationResource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,13 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public DirectoryResponseDto createFolder(String folderName) {
+        ValidationResource.checkingPath(folderName);
         return storageService.createFolder(folderName);
     }
 
     @Override
     public List<Resource> getFolderContents(String folderName) {
+        ValidationResource.checkingPath(folderName);
         return storageService.getFolderContents(folderName);
     }
 }

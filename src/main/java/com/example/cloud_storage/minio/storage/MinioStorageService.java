@@ -4,7 +4,12 @@ import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.Type;
 import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
 import com.example.cloud_storage.minio.dto.file.FileResponseDto;
-import com.example.cloud_storage.user.security.SecurityUtils;
+import com.example.cloud_storage.minio.exception.FolderAlreadyExistsException;
+import com.example.cloud_storage.minio.exception.FolderNotFoundException;
+import com.example.cloud_storage.minio.exception.ParentFolderNotFoundException;
+import com.example.cloud_storage.minio.exception.StorageException;
+import com.example.cloud_storage.minio.validation.ValidationResource;
+import com.example.cloud_storage.user.security.util.SecurityUtil;
 import io.minio.*;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
@@ -40,7 +45,7 @@ public class MinioStorageService implements StorageService {
                 );
             }
         } catch (Exception e) {
-            throw new RuntimeException("Cannot create MinIO bucket!", e);
+            throw new StorageException("Cannot create MinIO bucket!");
         }
     }
 
@@ -54,6 +59,14 @@ public class MinioStorageService implements StorageService {
     public DirectoryResponseDto createFolder(String folderName) {
         DirectoryResponseDto dto;
         try {
+            if (!(folderName.contains("user-") && folderName.contains("-files/"))) {
+                if (!ValidationResource.checkingExistenceResource(BUCKET, createRootFolderForUser())) {
+                    throw new ParentFolderNotFoundException("Parent folder not found!");
+                }
+                if (ValidationResource.checkingExistenceResource(BUCKET, folderName)) {
+                    throw new FolderAlreadyExistsException("Folder already exists: " + folderName);
+                }
+            }
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(BUCKET)
@@ -72,13 +85,16 @@ public class MinioStorageService implements StorageService {
                     Type.DIRECTORY
             );
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new StorageException("Server error!");
         }
         return dto;
     }
 
     @Override
     public List<Resource> getFolderContents(String folderName) {
+        if (!ValidationResource.checkingExistenceResource(BUCKET, folderName)) {
+            throw new FolderNotFoundException("Folder not found: " + folderName);
+        }
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
@@ -91,7 +107,7 @@ public class MinioStorageService implements StorageService {
     }
 
     private String createRootFolderForUser() {
-        String number = SecurityUtils.getCurrentUserId().toString();
+        String number = SecurityUtil.getCurrentUserId().toString();
         return String.format(ROOT_FOLDER, number);
     }
 
@@ -134,7 +150,7 @@ public class MinioStorageService implements StorageService {
                     );
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new StorageException("Server error!");
             }
         }
         return resources;
