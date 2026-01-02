@@ -1,11 +1,11 @@
-package com.example.cloud_storage.user.security;
+package com.example.cloud_storage.user.security.util;
 
 import com.example.cloud_storage.user.exception.UnauthorizedUserException;
 import com.example.cloud_storage.user.model.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-public class SecurityUtils {
+public class SecurityUtil {
 
     public static Integer getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
