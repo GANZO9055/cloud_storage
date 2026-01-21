@@ -8,15 +8,16 @@ import com.example.cloud_storage.minio.exception.*;
 import com.example.cloud_storage.minio.validation.ValidationResource;
 import com.example.cloud_storage.user.security.util.SecurityUtil;
 import io.minio.*;
-import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -214,8 +215,50 @@ public class MinioStorageService implements StorageService {
     }
 
     @Override
-    public List<Resource> upload(String path) {
-        return List.of();
+    public List<Resource> upload(String path, List<MultipartFile> files) {
+        if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            throw new ResourceNotFoundException("Resource not found: " + path);
+        }
+
+        List<Resource> resources = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+
+            String originalName = file.getOriginalFilename();
+            String objectName = path + originalName;
+
+            if (ValidationResource.checkingExistenceResource(BUCKET, objectName)) {
+                throw new ResourceAlreadyExistsException("File already exists: " + objectName);
+            }
+            try {
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(BUCKET)
+                                .object(objectName)
+                                .stream(
+                                        file.getInputStream(),
+                                        file.getSize(),
+                                        -1
+                                )
+                                .contentType(file.getContentType())
+                                .build()
+                );
+            } catch (IOException e) {
+                throw new StorageException("Failed read file!");
+            } catch (Exception e) {
+                throw new StorageException("Upload failed!");
+            }
+
+            Resource resource = new FileResponseDto(
+                    path,
+                    getResourceNameFromPath(objectName),
+                    file.getSize(),
+                    Type.FILE
+            );
+
+            resources.add(resource);
+        }
+        return resources;
     }
 
     @Override
