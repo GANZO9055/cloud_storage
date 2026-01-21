@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -28,7 +30,7 @@ public class FileController {
     }
 
     @GetMapping("/download")
-    public ResponseEntity downloadResource(@RequestParam String path) {
+    public ResponseEntity<InputStream> downloadResource(@RequestParam String path) {
         return ResponseEntity.ok(fileService.download(path));
     }
 
@@ -43,7 +45,9 @@ public class FileController {
     }
 
     @PostMapping
-    public ResponseEntity<List<Resource>> uploadResource(@RequestParam String path) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(fileService.upload(path));
+    public ResponseEntity<List<Resource>> uploadResource(
+            @RequestParam("path") String path,
+            @RequestParam("files") List<MultipartFile> files) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(fileService.upload(path, files));
     }
 }
