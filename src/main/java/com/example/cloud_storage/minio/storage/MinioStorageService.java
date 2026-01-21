@@ -59,6 +59,7 @@ public class MinioStorageService implements StorageService {
     public Resource get(String path) {
         Resource resource;
         if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource not found (get): {}", path);
             throw new ResourceNotFoundException("Resource not found: " + path);
         }
         try {
@@ -93,6 +94,7 @@ public class MinioStorageService implements StorageService {
     @Override
     public void delete(String path) {
         if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource not found (delete): {}", path);
             throw new ResourceNotFoundException("Resource not found: " + path);
         }
         try {
@@ -121,6 +123,7 @@ public class MinioStorageService implements StorageService {
     @Override
     public InputStream download(String path) {
         if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource not found (download): {}", path);
             throw new ResourceNotFoundException("Resource not found: " + path);
         }
         if (path.endsWith("/")) {
@@ -132,9 +135,11 @@ public class MinioStorageService implements StorageService {
     @Override
     public Resource move(String fromPath, String toPath) {
         if (!ValidationResource.checkingExistenceResource(BUCKET, fromPath)) {
+            log.error("Resource not found (move): {}", fromPath);
             throw new ResourceNotFoundException("Resource not found: " + fromPath);
         }
         if (ValidationResource.checkingExistenceResource(BUCKET, toPath)) {
+            log.error("Resource already exists (move): {}", toPath);
             throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
         }
         try {
@@ -169,8 +174,10 @@ public class MinioStorageService implements StorageService {
                                 .build()
                 );
             }
+            log.info("Resource success move!");
             return get(toPath);
         } catch (Exception e) {
+            log.error("Failed to move resource!");
             throw new StorageException("Failed to move resource!");
         }
     }
@@ -208,15 +215,18 @@ public class MinioStorageService implements StorageService {
                     }
                 }
             } catch (Exception e) {
+                log.error("Search failed!");
                 throw new StorageException("Search failed!");
             }
         }
+        log.info("Search success");
         return resources;
     }
 
     @Override
     public List<Resource> upload(String path, List<MultipartFile> files) {
         if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource already exists (upload): {}", path);
             throw new ResourceNotFoundException("Resource not found: " + path);
         }
 
@@ -228,6 +238,7 @@ public class MinioStorageService implements StorageService {
             String objectName = path + originalName;
 
             if (ValidationResource.checkingExistenceResource(BUCKET, objectName)) {
+                log.error("Resource already exists (upload): {}", objectName);
                 throw new ResourceAlreadyExistsException("File already exists: " + objectName);
             }
             try {
@@ -244,8 +255,10 @@ public class MinioStorageService implements StorageService {
                                 .build()
                 );
             } catch (IOException e) {
+                log.error("Failed read file!");
                 throw new StorageException("Failed read file!");
             } catch (Exception e) {
+                log.error("Upload failed!");
                 throw new StorageException("Upload failed!");
             }
 
@@ -258,6 +271,7 @@ public class MinioStorageService implements StorageService {
 
             resources.add(resource);
         }
+        log.info("Resource success upload");
         return resources;
     }
 
@@ -273,11 +287,13 @@ public class MinioStorageService implements StorageService {
         try {
             if (!(path.contains("user-") && path.contains("-files/"))) {
                 if (!ValidationResource.checkingExistenceResource(BUCKET, createRootFolderForUser())) {
+                    log.error("Parent folder not found!");
                     throw new ParentFolderNotFoundException("Parent folder not found!");
                 }
-                if (ValidationResource.checkingExistenceResource(BUCKET, path)) {
-                    throw new FolderAlreadyExistsException("Folder already exists: " + path);
-                }
+            }
+            if (ValidationResource.checkingExistenceResource(BUCKET, path)) {
+                log.error("Folder already exists: {}", path);
+                throw new FolderAlreadyExistsException("Folder already exists: " + path);
             }
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -296,8 +312,9 @@ public class MinioStorageService implements StorageService {
                     getResourceNameFromPath(path),
                     Type.DIRECTORY
             );
+            log.info("Folder success create");
         } catch (Exception e) {
-            throw new StorageException("Server error!");
+            throw new StorageException("Error when creating folder");
         }
         return dto;
     }
@@ -305,6 +322,7 @@ public class MinioStorageService implements StorageService {
     @Override
     public List<Resource> getFolderContents(String path) {
         if (!ValidationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Folder not found: {}", path);
             throw new FolderNotFoundException("Folder not found: " + path);
         }
         Iterable<Result<Item>> items = minioClient.listObjects(
@@ -315,6 +333,7 @@ public class MinioStorageService implements StorageService {
                         .recursive(false)
                         .build()
         );
+        log.info("Contents folder success get");
         return getResourcesFromItems(items);
     }
 
@@ -350,6 +369,7 @@ public class MinioStorageService implements StorageService {
             zipOutputStream.close();
             return new ByteArrayInputStream(baos.toByteArray());
         } catch (Exception e) {
+            log.error("Failed download folder!");
             throw new StorageException("Failed download folder!");
         }
     }
@@ -363,6 +383,7 @@ public class MinioStorageService implements StorageService {
                             .build()
             );
         } catch (Exception e) {
+            log.error("Failed download file!");
             throw new StorageException("Failed download file!");
         }
     }
@@ -412,7 +433,7 @@ public class MinioStorageService implements StorageService {
                 }
             } catch (Exception e) {
                 log.error("Failed to get resources!");
-                throw new StorageException("Server error!");
+                throw new StorageException("Failed to get resources!");
             }
         }
         return resources;
