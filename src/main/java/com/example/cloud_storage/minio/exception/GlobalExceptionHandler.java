@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(FolderAlreadyExistsException.class)
-    public ResponseEntity<?> handleConflict(FolderAlreadyExistsException exception) {
+    public ResponseEntity<?> handleConflictFolder(FolderAlreadyExistsException exception) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(
@@ -58,6 +58,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleNotFoundParent(ParentFolderNotFoundException exception) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(
+                        Map.of("message", exception.getMessage())
+                );
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleNotFoundResource(ResourceNotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        Map.of("message", exception.getMessage())
+                );
+    }
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<?> handleConflictResource(ResourceAlreadyExistsException exception) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(
                         Map.of("message", exception.getMessage())
                 );
