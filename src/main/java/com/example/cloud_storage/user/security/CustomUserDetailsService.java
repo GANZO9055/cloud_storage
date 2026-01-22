@@ -1,4 +1,4 @@
-package com.example.cloud_storage.user.service;
+package com.example.cloud_storage.user.security;
 
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;

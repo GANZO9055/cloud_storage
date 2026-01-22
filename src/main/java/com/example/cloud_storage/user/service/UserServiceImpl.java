@@ -1,5 +1,6 @@
 package com.example.cloud_storage.user.service;
 
+import com.example.cloud_storage.minio.storage.StorageService;
 import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.user.exception.UnauthorizedUserException;
 import com.example.cloud_storage.user.exception.UserAlreadyExistsException;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private AuthenticationManager authenticationManager;
+    private StorageService storageService;
 
     @Override
     public User create(UserRequestDto userRequestDto,
@@ -69,6 +71,7 @@ public class UserServiceImpl implements UserService {
             throw new UnauthorizedUserException("Invalid password!");
         }
         createCookie(userRequestDto, request, response);
+        storageService.createRootFolder();
         return user;
     }
 
