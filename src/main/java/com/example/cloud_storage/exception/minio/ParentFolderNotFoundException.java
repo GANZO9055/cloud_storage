@@ -1,4 +1,4 @@
-package com.example.cloud_storage.minio.exception;
+package com.example.cloud_storage.exception.minio;
 
 public class ParentFolderNotFoundException extends RuntimeException {
     public ParentFolderNotFoundException(String message) {

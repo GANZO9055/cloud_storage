@@ -1,4 +1,4 @@
-package com.example.cloud_storage.minio.exception;
+package com.example.cloud_storage.exception.minio;
 
 public class FolderAlreadyExistsException extends RuntimeException {
     public FolderAlreadyExistsException(String message) {
