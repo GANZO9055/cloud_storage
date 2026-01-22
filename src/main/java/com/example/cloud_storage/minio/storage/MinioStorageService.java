@@ -1,8 +1,8 @@
 package com.example.cloud_storage.minio.storage;
 
+import com.example.cloud_storage.exception.minio.*;
 import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
-import com.example.cloud_storage.minio.exception.*;
 import com.example.cloud_storage.minio.mapper.ResourceMapper;
 import com.example.cloud_storage.minio.validation.ValidationResource;
 import com.example.cloud_storage.user.security.util.SecurityUtil;

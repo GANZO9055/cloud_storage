@@ -1,9 +1,9 @@
 package com.example.cloud_storage.user.service;
 
 import com.example.cloud_storage.user.dto.UserRequestDto;
-import com.example.cloud_storage.user.exception.UnauthorizedUserException;
-import com.example.cloud_storage.user.exception.UserAlreadyExistsException;
-import com.example.cloud_storage.user.exception.UsernameNotFoundException;
+import com.example.cloud_storage.exception.user.UnauthorizedUserException;
+import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
+import com.example.cloud_storage.exception.user.UsernameNotFoundException;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,6 @@
 package com.example.cloud_storage.minio.validation;
 
-import com.example.cloud_storage.minio.exception.InvalidPathException;
+import com.example.cloud_storage.exception.minio.InvalidPathException;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Autowired;
