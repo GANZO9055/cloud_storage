@@ -1,10 +1,9 @@
 package com.example.cloud_storage.minio.storage;
 
 import com.example.cloud_storage.minio.dto.Resource;
-import com.example.cloud_storage.minio.dto.Type;
 import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
-import com.example.cloud_storage.minio.dto.file.FileResponseDto;
 import com.example.cloud_storage.minio.exception.*;
+import com.example.cloud_storage.minio.mapper.ResourceMapper;
 import com.example.cloud_storage.minio.validation.ValidationResource;
 import com.example.cloud_storage.user.security.util.SecurityUtil;
 import io.minio.*;
@@ -33,6 +32,8 @@ public class MinioStorageService implements StorageService {
 
     @Autowired
     private MinioClient minioClient;
+    @Autowired
+    private ResourceMapper resourceMapper;
 
     @PostConstruct
     public void initStorage() {
@@ -71,18 +72,9 @@ public class MinioStorageService implements StorageService {
             );
 
            if (path.endsWith("/")) {
-               resource = new FolderResponseDto(
-                       path,
-                       getResourceNameFromPath(path),
-                       Type.DIRECTORY
-               );
+               resource = resourceMapper.toFolder(path, getResourceNameFromPath(path));
            } else {
-               resource = new FileResponseDto(
-                       path,
-                       getResourceNameFromPath(path),
-                       result.size(),
-                       Type.FILE
-               );
+               resource = resourceMapper.toFile(path, getResourceNameFromPath(path), result.size());
            }
         } catch (Exception e) {
             log.error("Failed to get resource info: {}", path);
@@ -199,20 +191,7 @@ public class MinioStorageService implements StorageService {
                 Item result = item.get();
                 String pathName = result.objectName();
                 if (pathName.contains(query)) {
-                    if (result.isDir()) {
-                        resources.add(new FolderResponseDto(
-                                pathName,
-                                getResourceNameFromPath(pathName),
-                                Type.DIRECTORY
-                        ));
-                    } else {
-                        resources.add(new FileResponseDto(
-                                pathName,
-                                getResourceNameFromPath(pathName),
-                                result.size(),
-                                Type.FILE
-                        ));
-                    }
+                    resources.add(getResourceFromItem(result));
                 }
             } catch (Exception e) {
                 log.error("Search failed!");
@@ -262,11 +241,10 @@ public class MinioStorageService implements StorageService {
                 throw new StorageException("Upload failed!");
             }
 
-            Resource resource = new FileResponseDto(
+            Resource resource = resourceMapper.toFile(
                     path,
                     getResourceNameFromPath(objectName),
-                    file.getSize(),
-                    Type.FILE
+                    file.getSize()
             );
 
             resources.add(resource);
@@ -307,11 +285,7 @@ public class MinioStorageService implements StorageService {
                             .build()
             );
 
-            dto = new FolderResponseDto(
-                    path,
-                    getResourceNameFromPath(path),
-                    Type.DIRECTORY
-            );
+            dto = resourceMapper.toFolder(path, getResourceNameFromPath(path));
             log.info("Folder success create");
         } catch (Exception e) {
             throw new StorageException("Error when creating folder");
@@ -325,6 +299,8 @@ public class MinioStorageService implements StorageService {
             log.error("Folder not found: {}", path);
             throw new FolderNotFoundException("Folder not found: " + path);
         }
+        List<Resource> resources = new ArrayList<>();
+
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
@@ -333,8 +309,17 @@ public class MinioStorageService implements StorageService {
                         .recursive(false)
                         .build()
         );
+
+        for (Result<Item> result : items) {
+            try {
+                resources.add(getResourceFromItem(result.get()));
+            } catch (Exception e) {
+                log.error("Failed to get resource!");
+                throw new StorageException("Failed to get resource!");
+            }
+        }
         log.info("Contents folder success get");
-        return getResourcesFromItems(items);
+        return resources;
     }
 
     private InputStream downloadFolder(String path) {
@@ -404,38 +389,16 @@ public class MinioStorageService implements StorageService {
         return folderName;
     }
 
-    private List<Resource> getResourcesFromItems(Iterable<Result<Item>> items) {
-        List<Resource> resources = new ArrayList<>();
+    private Resource getResourceFromItem(Item item) {
+        Resource resource;
+        String path = item.objectName();
+        String name = getResourceNameFromPath(path);
 
-        for (Result<Item> result : items) {
-            try {
-                Item item = result.get();
-                String path = item.objectName();
-                String name = getResourceNameFromPath(path);
-
-                if (item.isDir()) {
-                    resources.add(
-                            new FolderResponseDto(
-                                    path,
-                                    name,
-                                    Type.DIRECTORY
-                            )
-                    );
-                } else {
-                    resources.add(
-                            new FileResponseDto(
-                                    path,
-                                    name,
-                                    item.size(),
-                                    Type.FILE
-                            )
-                    );
-                }
-            } catch (Exception e) {
-                log.error("Failed to get resources!");
-                throw new StorageException("Failed to get resources!");
-            }
+        if (item.isDir()) {
+             resource = resourceMapper.toFolder(path, name);
+        } else {
+            resource = resourceMapper.toFile(path, name, item.size());
         }
-        return resources;
+        return resource;
     }
 }
