@@ -9,7 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class DirectoryResponseDto extends Resource {
+public class FolderResponseDto extends Resource {
     private String path;
     private String name;
     private Type type;

@@ -1,7 +1,7 @@
 package com.example.cloud_storage.minio.service.directory;
 
 import com.example.cloud_storage.minio.dto.Resource;
-import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
+import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
 import com.example.cloud_storage.minio.storage.StorageService;
 import com.example.cloud_storage.minio.validation.ValidationResource;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ public class FolderServiceImpl implements FolderService {
     private StorageService storageService;
 
     @Override
-    public DirectoryResponseDto createFolder(String folderName) {
+    public FolderResponseDto createFolder(String folderName) {
         ValidationResource.checkingPath(folderName);
         return storageService.createFolder(folderName);
     }

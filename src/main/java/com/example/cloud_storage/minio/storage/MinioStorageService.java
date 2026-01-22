@@ -2,7 +2,7 @@ package com.example.cloud_storage.minio.storage;
 
 import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.Type;
-import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
+import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
 import com.example.cloud_storage.minio.dto.file.FileResponseDto;
 import com.example.cloud_storage.minio.exception.*;
 import com.example.cloud_storage.minio.validation.ValidationResource;
@@ -71,7 +71,7 @@ public class MinioStorageService implements StorageService {
             );
 
            if (path.endsWith("/")) {
-               resource = new DirectoryResponseDto(
+               resource = new FolderResponseDto(
                        path,
                        getResourceNameFromPath(path),
                        Type.DIRECTORY
@@ -200,7 +200,7 @@ public class MinioStorageService implements StorageService {
                 String pathName = result.objectName();
                 if (pathName.contains(query)) {
                     if (result.isDir()) {
-                        resources.add(new DirectoryResponseDto(
+                        resources.add(new FolderResponseDto(
                                 pathName,
                                 getResourceNameFromPath(pathName),
                                 Type.DIRECTORY
@@ -282,8 +282,8 @@ public class MinioStorageService implements StorageService {
     }
 
     @Override
-    public DirectoryResponseDto createFolder(String path) {
-        DirectoryResponseDto dto;
+    public FolderResponseDto createFolder(String path) {
+        FolderResponseDto dto;
         try {
             if (!(path.contains("user-") && path.contains("-files/"))) {
                 if (!ValidationResource.checkingExistenceResource(BUCKET, createRootFolderForUser())) {
@@ -307,7 +307,7 @@ public class MinioStorageService implements StorageService {
                             .build()
             );
 
-            dto = new DirectoryResponseDto(
+            dto = new FolderResponseDto(
                     path,
                     getResourceNameFromPath(path),
                     Type.DIRECTORY
@@ -415,7 +415,7 @@ public class MinioStorageService implements StorageService {
 
                 if (item.isDir()) {
                     resources.add(
-                            new DirectoryResponseDto(
+                            new FolderResponseDto(
                                     path,
                                     name,
                                     Type.DIRECTORY

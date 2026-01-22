@@ -1,7 +1,7 @@
 package com.example.cloud_storage.minio.controller;
 
 import com.example.cloud_storage.minio.dto.Resource;
-import com.example.cloud_storage.minio.dto.directory.DirectoryResponseDto;
+import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
 import com.example.cloud_storage.minio.service.directory.FolderService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,7 +22,7 @@ public class FolderController {
     private FolderService directoryService;
 
     @PostMapping
-    public ResponseEntity<DirectoryResponseDto> createFolder(
+    public ResponseEntity<FolderResponseDto> createFolder(
             @RequestParam
             @Size(min = 1, max = 50)
             @NotBlank
