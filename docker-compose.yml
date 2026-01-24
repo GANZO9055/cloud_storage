@@ -12,8 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
 
   minio:
     image: minio/minio:latest
@@ -27,6 +25,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
-    networks:
-      - app-network
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio-data:
