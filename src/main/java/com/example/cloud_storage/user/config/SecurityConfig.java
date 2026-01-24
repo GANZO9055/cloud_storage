@@ -29,6 +29,7 @@ public class SecurityConfig {
                         auth -> auth
                                         .requestMatchers("/api/auth/**").permitAll()
                                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                        .requestMatchers("/", "/index.html", "config.js", "/assets/**").permitAll()
                                         .anyRequest()
                                         .authenticated()
                 )
