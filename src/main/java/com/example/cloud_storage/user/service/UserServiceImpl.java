@@ -41,8 +41,6 @@ public class UserServiceImpl implements UserService {
             throw new UserAlreadyExistsException("User is already busy!");
         }
 
-        createCookie(userRequestDto, request, response);
-
         User savedUser;
         try {
             User user = new User();
@@ -54,6 +52,7 @@ public class UserServiceImpl implements UserService {
             log.error("Error while registration user username={}", userRequestDto.getUsername());
             throw new RuntimeException(exception);
         }
+        createCookie(userRequestDto, request, response);
         return savedUser;
     }
 
@@ -71,7 +70,7 @@ public class UserServiceImpl implements UserService {
             throw new UnauthorizedUserException("Invalid password!");
         }
         createCookie(userRequestDto, request, response);
-        storageService.createRootFolder();
+        storageService.createRootFolder(user.getId());
         return user;
     }
 
