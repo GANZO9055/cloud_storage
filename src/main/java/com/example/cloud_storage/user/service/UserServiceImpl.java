@@ -8,7 +8,6 @@ import com.example.cloud_storage.exception.user.UsernameNotFoundException;
 import com.example.cloud_storage.user.model.Role;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -52,7 +51,19 @@ public class UserServiceImpl implements UserService {
             log.error("Error while registration user username={}", userRequestDto.getUsername());
             throw new RuntimeException(exception);
         }
-        createCookie(userRequestDto, request, response);
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        userRequestDto.getUsername(),
+                        userRequestDto.getPassword()
+                )
+        );
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        securityContext.setAuthentication(authentication);
+
+        HttpSession session = request.getSession(true);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
+
         return savedUser;
     }
 
@@ -69,34 +80,19 @@ public class UserServiceImpl implements UserService {
             log.warn("Authentication failed: invalid password for username={}", userRequestDto.getUsername());
             throw new UnauthorizedUserException("Invalid password!");
         }
-        createCookie(userRequestDto, request, response);
-        storageService.createRootFolder(user.getId());
-        return user;
-    }
-
-    private void createCookie(UserRequestDto userRequestDto,
-                              HttpServletRequest request,
-                              HttpServletResponse response) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         userRequestDto.getUsername(),
                         userRequestDto.getPassword()
                 )
         );
-
         SecurityContext securityContext = SecurityContextHolder.getContext();
         securityContext.setAuthentication(authentication);
 
         HttpSession session = request.getSession(true);
-
         session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
-        session.setAttribute("username", userRequestDto.getUsername());
 
-        Cookie cookie = new Cookie("JSESSIONID", session.getId());
-        cookie.setPath("/api");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(60 * 60);
-
-        response.addCookie(cookie);
+        storageService.createRootFolder(user.getId());
+        return user;
     }
 }
