@@ -4,34 +4,30 @@ import com.example.cloud_storage.exception.minio.InvalidPathException;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
 
+@Component
 public class ValidationResource {
 
-    private static final Pattern PATH_PATTERN = Pattern.compile("^[a-zA-Z0-9/_-]+/$");
+    private static final Pattern PATH_PATTERN = Pattern.compile("^[a-zA-Z0-9/_\\-.]+/?$");
 
     @Autowired
-    private static MinioClient minioClient;
+    private MinioClient minioClient;
 
-    public static boolean checkingExistenceResource(String bucket, String resourceName) {
+    public boolean checkingExistenceResource(String bucket, String path) {
         var resources = minioClient.listObjects(
                 ListObjectsArgs.builder()
                 .bucket(bucket)
-                .prefix(resourceName)
+                .prefix(path)
                 .maxKeys(1)
                 .build()
         );
         return resources.iterator().hasNext();
     }
 
-    public static void checkingPath(String path) {
-        if (path.contains("..")) {
-            throw new InvalidPathException("Path traversal is forbidden");
-        }
-        if (path.contains("//")) {
-            throw new InvalidPathException("Invalid path format!");
-        }
+    public void checkingPath(String path) {
         if (!PATH_PATTERN.matcher(path).matches()) {
             throw new InvalidPathException("Invalid characters in path");
         }
