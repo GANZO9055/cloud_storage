@@ -64,6 +64,7 @@ public class UserServiceImpl implements UserService {
         HttpSession session = request.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
 
+        storageService.createRootFolder(savedUser.getId());
         return savedUser;
     }
 
@@ -91,8 +92,6 @@ public class UserServiceImpl implements UserService {
 
         HttpSession session = request.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
-
-        storageService.createRootFolder(user.getId());
         return user;
     }
 }
