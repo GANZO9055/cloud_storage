@@ -14,16 +14,16 @@ import java.util.List;
 public class FolderServiceImpl implements FolderService {
 
     private StorageService storageService;
+    private ValidationResource validationResource;
 
     @Override
     public FolderResponseDto createFolder(String folderName) {
-        ValidationResource.checkingPath(folderName);
+        validationResource.checkingPath(folderName);
         return storageService.createFolder(folderName);
     }
 
     @Override
     public List<Resource> getFolderContents(String folderName) {
-        ValidationResource.checkingPath(folderName);
         return storageService.getFolderContents(folderName);
     }
 }
