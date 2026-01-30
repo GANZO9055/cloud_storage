@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.getWriter().write("{\"message\":\"User not unauthorized\"}");
                         })
                 )
                 .logout(logout -> logout

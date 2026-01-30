@@ -47,7 +47,7 @@ public class FileController {
     @PostMapping
     public ResponseEntity<List<Resource>> uploadResource(
             @RequestParam("path") String path,
-            @RequestParam("files") List<MultipartFile> files) {
+            @RequestParam("object") List<MultipartFile> files) {
         return ResponseEntity.status(HttpStatus.CREATED).body(fileService.upload(path, files));
     }
 }

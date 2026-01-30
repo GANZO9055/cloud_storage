@@ -85,19 +85,21 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public void delete(String path) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource not found (delete): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
+        String newPath = deleteCloneFromPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Resource not found (delete): {}", newPath);
+            throw new ResourceNotFoundException("Resource not found: " + newPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(path)
+                            .prefix(newPath)
                             .recursive(true)
                             .build()
             );
             for (Result<Item> item : items) {
+                log.info("Info: {}", item.get().objectName());
                 minioClient.removeObject(
                         RemoveObjectArgs.builder()
                                 .bucket(BUCKET)
@@ -105,9 +107,9 @@ public class MinioStorageService implements StorageService {
                                 .build()
                 );
             }
-            log.info("Resource deleted: {}", path);
+            log.info("Resource deleted: {}", newPath);
         } catch (Exception e) {
-            log.error("Resource deleted: {}", path);
+            log.error("Resource deleted: {}", newPath);
             throw new StorageException("Failed to delete resource!");
         }
     }
@@ -179,7 +181,7 @@ public class MinioStorageService implements StorageService {
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
-                        .prefix(query)
+                        .prefix("")
                         .recursive(true)
                         .build()
         );
@@ -249,7 +251,7 @@ public class MinioStorageService implements StorageService {
 
             resources.add(resource);
         }
-        log.info("Resource success upload");
+        log.info("Resource success upload: {}", path);
         return resources;
     }
 
@@ -384,16 +386,13 @@ public class MinioStorageService implements StorageService {
     }
 
     private String getResourceNameFromPath(String path) {
-        String newPath = "";
+        String newPath = path;
         if (path.endsWith("/")) {
             newPath = path.substring(0, path.length() - 1);
         }
         int index = newPath.lastIndexOf("/");
         if (index >= 0) {
             newPath = newPath.substring(index + 1);
-        }
-        if (!newPath.contains(".")) {
-            newPath = newPath + "/";
         }
         return newPath;
     }
@@ -404,10 +403,39 @@ public class MinioStorageService implements StorageService {
         String name = getResourceNameFromPath(path);
 
         if (item.isDir()) {
-             resource = resourceMapper.toFolder(path, name);
+             resource = resourceMapper.toFolder(path, name + "/");
         } else {
             resource = resourceMapper.toFile(path, name, item.size());
         }
         return resource;
+    }
+
+    private String deleteCloneFromPath(String path) {
+        log.info("Path before delete clone: {}", path);
+        if (path.endsWith("/")) {
+            String newPath = path.substring(0, path.length() - 1);
+            int index = newPath.lastIndexOf("/");
+            String nameResource = newPath.substring(index + 1);
+            newPath = newPath.substring(0, index + 1);
+            if (newPath.contains(nameResource)) {
+                path = newPath;
+            }
+        } else {
+            int slashIndex = path.lastIndexOf("/");
+            if (slashIndex >= 0) {
+                String parentPath = path.substring(0, slashIndex + 1);
+                String fileName = path.substring(slashIndex + 1);
+
+                if (fileName.length() % 2 == 0) {
+                    String halfName = fileName.substring(0, fileName.length() / 2);
+                    if (halfName.equals(fileName.substring(fileName.length() / 2))) {
+                        fileName = halfName;
+                    }
+                }
+                path = parentPath + fileName;
+            }
+        }
+        log.info("Path after delete clone: {}", path);
+        return path;
     }
 }
