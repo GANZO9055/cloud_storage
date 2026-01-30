@@ -10,7 +10,6 @@ import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -58,34 +57,34 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public Resource get(String path) {
-        Resource resource;
         if (!validationResource.checkingExistenceResource(BUCKET, path)) {
             log.error("Resource not found (get): {}", path);
             throw new ResourceNotFoundException("Resource not found: " + path);
         }
         try {
-           StatObjectResponse result =  minioClient.statObject(
-                    StatObjectArgs.builder()
+            Iterable<Result<Item>> items = minioClient.listObjects(
+                    ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .object(path)
+                            .prefix(path)
+                            .recursive(false)
                             .build()
             );
-
-           if (path.endsWith("/")) {
-               resource = resourceMapper.toFolder(path, getResourceNameFromPath(path));
-           } else {
-               resource = resourceMapper.toFile(path, getResourceNameFromPath(path), result.size());
-           }
+            for (Result<Item> itemResult : items) {
+                Item result = itemResult.get();
+                if (!path.endsWith("/")) {
+                    return resourceMapper.toFile(path, getResourceNameFromPath(path), result.size());
+                }
+            }
+            return resourceMapper.toFolder(path, getResourceNameFromPath(path));
         } catch (Exception e) {
             log.error("Failed to get resource info: {}", path);
             throw new StorageException("Failed to get resource information!");
         }
-        return resource;
     }
 
     @Override
     public void delete(String path) {
-        String newPath = deleteCloneFromPath(path);
+        String newPath = deleteCloneFromEndPath(path);
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Resource not found (delete): {}", newPath);
             throw new ResourceNotFoundException("Resource not found: " + newPath);
@@ -128,19 +127,22 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public Resource move(String fromPath, String toPath) {
-        if (!validationResource.checkingExistenceResource(BUCKET, fromPath)) {
-            log.error("Resource not found (move): {}", fromPath);
-            throw new ResourceNotFoundException("Resource not found: " + fromPath);
+        String newFromPath = deleteCloneFromEndPath(fromPath);
+        String newToPath = deleteCloneFromHalfPath(toPath);
+
+        if (!validationResource.checkingExistenceResource(BUCKET, newFromPath)) {
+            log.error("Resource not found (move): {}", newFromPath);
+            throw new ResourceNotFoundException("Resource not found: " + newFromPath);
         }
-        if (validationResource.checkingExistenceResource(BUCKET, toPath)) {
-            log.error("Resource already exists (move): {}", toPath);
-            throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
+        if (validationResource.checkingExistenceResource(BUCKET, newToPath)) {
+            log.error("Resource already exists (move): {}", newToPath);
+            throw new ResourceAlreadyExistsException("Resource already exists: " + newToPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(fromPath)
+                            .prefix(newFromPath)
                             .recursive(true)
                             .build()
             );
@@ -148,7 +150,7 @@ public class MinioStorageService implements StorageService {
                 Item result = item.get();
 
                 String newResourceName =
-                        toPath + result.objectName().substring(fromPath.length());
+                        newToPath + result.objectName().substring(newFromPath.length());
 
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
@@ -169,7 +171,7 @@ public class MinioStorageService implements StorageService {
                 );
             }
             log.info("Resource success move!");
-            return get(toPath);
+            return get(newToPath);
         } catch (Exception e) {
             log.error("Failed to move resource!");
             throw new StorageException("Failed to move resource!");
@@ -410,7 +412,7 @@ public class MinioStorageService implements StorageService {
         return resource;
     }
 
-    private String deleteCloneFromPath(String path) {
+    private String deleteCloneFromEndPath(String path) {
         log.info("Path before delete clone: {}", path);
         if (path.endsWith("/")) {
             String newPath = path.substring(0, path.length() - 1);
@@ -437,5 +439,26 @@ public class MinioStorageService implements StorageService {
         }
         log.info("Path after delete clone: {}", path);
         return path;
+    }
+
+    private String deleteCloneFromHalfPath (String path) {
+        String newPath = path;
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        log.info("New path: {}", path);
+        int lastSlashIndex = path.lastIndexOf("/");
+        String resourceName = path.substring(lastSlashIndex + 1);
+        path = path.substring(0, lastSlashIndex + 1);
+        log.info("Last new path: {}", path);
+
+        String newToPath = deleteCloneFromEndPath(path);
+        newToPath = deleteCloneFromEndPath(newToPath + resourceName);
+
+        if (newPath.endsWith("/")) {
+            newToPath = newToPath + "/";
+        }
+        log.info("New newPath: {}", newToPath);
+        return newToPath;
     }
 }
