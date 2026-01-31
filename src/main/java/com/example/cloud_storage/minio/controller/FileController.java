@@ -4,9 +4,11 @@ import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.service.file.FileService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
 import java.util.List;
@@ -30,8 +32,17 @@ public class FileController {
     }
 
     @GetMapping("/download")
-    public ResponseEntity<InputStream> downloadResource(@RequestParam String path) {
-        return ResponseEntity.ok(fileService.download(path));
+    public ResponseEntity<StreamingResponseBody> downloadResource(@RequestParam String path) {
+        InputStream inputStream = fileService.download(path);
+
+        StreamingResponseBody stream = outputStream -> {
+            try (inputStream) {
+                inputStream.transferTo(outputStream);
+            }
+        };
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(stream);
     }
 
     @GetMapping("/move")

@@ -115,14 +115,15 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public InputStream download(String path) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource not found (download): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
+        String newPath = deleteCloneFromEndPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Resource not found (download): {}", newPath);
+            throw new ResourceNotFoundException("Resource not found: " + newPath);
         }
-        if (path.endsWith("/")) {
-            return downloadFolder(path);
+        if (newPath.endsWith("/")) {
+            return downloadFolder(newPath);
         }
-        return downloadFile(path);
+        return downloadFile(newPath);
     }
 
     @Override
