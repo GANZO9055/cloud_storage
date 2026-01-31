@@ -217,7 +217,6 @@ public class MinioStorageService implements StorageService {
         List<Resource> resources = new ArrayList<>();
 
         for (MultipartFile file : files) {
-
             String originalName = file.getOriginalFilename();
             String objectName = path + originalName;
 
@@ -402,8 +401,9 @@ public class MinioStorageService implements StorageService {
 
     private Resource getResourceFromItem(Item item) {
         Resource resource;
-        String path = item.objectName();
-        String name = getResourceNameFromPath(path);
+        int index = item.objectName().lastIndexOf("/");
+        String path = item.objectName().substring(0, index + 1);
+        String name = getResourceNameFromPath(item.objectName());
 
         if (item.isDir()) {
              resource = resourceMapper.toFolder(path, name + "/");
