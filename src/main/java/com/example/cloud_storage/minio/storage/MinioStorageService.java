@@ -5,6 +5,7 @@ import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
 import com.example.cloud_storage.minio.mapper.ResourceMapper;
 import com.example.cloud_storage.minio.validation.ValidationResource;
+import com.example.cloud_storage.user.util.UserUtil;
 import io.minio.*;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
@@ -33,6 +34,7 @@ public class MinioStorageService implements StorageService {
     private MinioClient minioClient;
     private ResourceMapper resourceMapper;
     private ValidationResource validationResource;
+    private UserUtil userUtil;
 
     @PostConstruct
     public void initStorage() {
@@ -84,16 +86,16 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public void delete(String path) {
-        log.info("Path: {}", path);
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource not found (delete): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
+        String newPath = getFullPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Resource not found (delete): {}", newPath);
+            throw new ResourceNotFoundException("Resource not found: " + newPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(path)
+                            .prefix(newPath)
                             .recursive(true)
                             .build()
             );
@@ -115,32 +117,34 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public InputStream download(String path) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource not found (download): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
+        String newPath = getFullPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Resource not found (download): {}", newPath);
+            throw new ResourceNotFoundException("Resource not found: " + newPath);
         }
         if (path.endsWith("/")) {
-            return downloadFolder(path);
+            return downloadFolder(newPath);
         }
-        return downloadFile(path);
+        return downloadFile(newPath);
     }
 
     @Override
     public Resource move(String fromPath, String toPath) {
-
-        if (!validationResource.checkingExistenceResource(BUCKET, fromPath)) {
-            log.error("Resource not found (move): {}", fromPath);
-            throw new ResourceNotFoundException("Resource not found: " + fromPath);
+        String newFromPath = getFullPath(fromPath);
+        String newToPath = getFullPath(toPath);
+        if (!validationResource.checkingExistenceResource(BUCKET, newFromPath)) {
+            log.error("Resource not found (move): {}", newFromPath);
+            throw new ResourceNotFoundException("Resource not found: " + newFromPath);
         }
-        if (validationResource.checkingExistenceResource(BUCKET, toPath)) {
-            log.error("Resource already exists (move): {}", toPath);
-            throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
+        if (validationResource.checkingExistenceResource(BUCKET, newToPath)) {
+            log.error("Resource already exists (move): {}", newToPath);
+            throw new ResourceAlreadyExistsException("Resource already exists: " + newToPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(fromPath)
+                            .prefix(newFromPath)
                             .recursive(true)
                             .build()
             );
@@ -148,7 +152,7 @@ public class MinioStorageService implements StorageService {
                 Item result = item.get();
 
                 String newResourceName =
-                        toPath + result.objectName().substring(fromPath.length());
+                        newToPath + result.objectName().substring(newFromPath.length());
 
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
@@ -169,7 +173,7 @@ public class MinioStorageService implements StorageService {
                 );
             }
             log.info("Resource success move!");
-            return get(toPath);
+            return get(newToPath);
         } catch (Exception e) {
             log.error("Failed to move resource!");
             throw new StorageException("Failed to move resource!");
@@ -206,16 +210,17 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public List<Resource> upload(String path, List<MultipartFile> files) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource already exists (upload): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
+        String newPath = getFullPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Resource already exists (upload): {}", newPath);
+            throw new ResourceNotFoundException("Resource not found: " + newPath);
         }
 
         List<Resource> resources = new ArrayList<>();
 
         for (MultipartFile file : files) {
             String originalName = file.getOriginalFilename();
-            String objectName = path + originalName;
+            String objectName = newPath + originalName;
 
             if (validationResource.checkingExistenceResource(BUCKET, objectName)) {
                 log.error("Resource already exists (upload): {}", objectName);
@@ -262,20 +267,20 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public FolderResponseDto createFolder(String path) {
-        String rootFolder = getRootFolderFromPath(path);
+        String newPath = getFullPath(path);
 
-        if (!(rootFolder.contains("user-") && rootFolder.contains("-files/"))) {
+        if (!(newPath.contains("user-") && newPath.contains("-files/"))) {
             log.error("Parent folder not found!");
             throw new ParentFolderNotFoundException("Parent folder not found!");
         }
-        if (validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Folder already exists: {}", path);
-            throw new FolderAlreadyExistsException("Folder already exists: " + path);
+        if (validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Folder already exists: {}", newPath);
+            throw new FolderAlreadyExistsException("Folder already exists: " + newPath);
         }
 
-        createEmptyFolder(path);
+        createEmptyFolder(newPath);
 
-        FolderResponseDto dto = resourceMapper.toFolder(path, getResourceNameFromPath(path));
+        FolderResponseDto dto = resourceMapper.toFolder(path, getResourceNameFromPath(newPath));
         log.info("Folder success create");
 
         return dto;
@@ -283,16 +288,17 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public List<Resource> getFolderContents(String path) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Folder not found: {}", path);
-            throw new FolderNotFoundException("Folder not found: " + path);
+        String newPath = getFullPath(path);
+        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
+            log.error("Folder not found: {}", newPath);
+            throw new FolderNotFoundException("Folder not found: " + newPath);
         }
         List<Resource> resources = new ArrayList<>();
 
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
-                        .prefix(path)
+                        .prefix(newPath)
                         .delimiter("/")
                         .recursive(false)
                         .build()
@@ -301,7 +307,7 @@ public class MinioStorageService implements StorageService {
         for (Result<Item> result : items) {
             try {
                 Item item = result.get();
-                if (item.objectName().equals(path)) {
+                if (item.objectName().equals(newPath)) {
                     continue;
                 }
                 resources.add(getResourceFromItem(item));
@@ -330,11 +336,6 @@ public class MinioStorageService implements StorageService {
         } catch (Exception e) {
             throw new StorageException("Error when creating folder");
         }
-    }
-
-    private String getRootFolderFromPath(String path) {
-        int firstSlash = path.indexOf('/');
-        return path.substring(0, firstSlash + 1);
     }
 
     private InputStream downloadFolder(String path) {
@@ -402,9 +403,15 @@ public class MinioStorageService implements StorageService {
 
     private Resource getResourceFromItem(Item item) {
         String path = item.objectName();
+
+        int slashIndex = path.indexOf("/");
+        path = path.substring(slashIndex + 1);
+
         int index = path.lastIndexOf("/");
         String newPath = path.substring(0, index + 1);
+
         String name = getResourceNameFromPath(path);
+
         if (path.endsWith("/")) {
             newPath = newPath.substring(0, path.length() -1);
             int number = newPath.lastIndexOf("/");
@@ -415,5 +422,10 @@ public class MinioStorageService implements StorageService {
              return resourceMapper.toFolder(newPath, name + "/");
         }
         return resourceMapper.toFile(newPath, name, item.size());
+    }
+
+    private String getFullPath(String path) {
+        String rootFolder = String.format(ROOT_FOLDER, userUtil.getId());
+        return rootFolder + path;
     }
 }
