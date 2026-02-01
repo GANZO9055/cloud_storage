@@ -84,16 +84,16 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public void delete(String path) {
-        String newPath = deleteCloneFromEndPath(path);
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Resource not found (delete): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + newPath);
+        log.info("Path: {}", path);
+        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource not found (delete): {}", path);
+            throw new ResourceNotFoundException("Resource not found: " + path);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(newPath)
+                            .prefix(path)
                             .recursive(true)
                             .build()
             );
@@ -106,44 +106,41 @@ public class MinioStorageService implements StorageService {
                                 .build()
                 );
             }
-            log.info("Resource deleted: {}", newPath);
+            log.info("Resource deleted: {}", path);
         } catch (Exception e) {
-            log.error("Resource deleted: {}", newPath);
+            log.error("Resource deleted: {}", path);
             throw new StorageException("Failed to delete resource!");
         }
     }
 
     @Override
     public InputStream download(String path) {
-        String newPath = deleteCloneFromEndPath(path);
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Resource not found (download): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + newPath);
+        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
+            log.error("Resource not found (download): {}", path);
+            throw new ResourceNotFoundException("Resource not found: " + path);
         }
-        if (newPath.endsWith("/")) {
-            return downloadFolder(newPath);
+        if (path.endsWith("/")) {
+            return downloadFolder(path);
         }
-        return downloadFile(newPath);
+        return downloadFile(path);
     }
 
     @Override
     public Resource move(String fromPath, String toPath) {
-        String newFromPath = deleteCloneFromEndPath(fromPath);
-        String newToPath = deleteCloneFromHalfPath(toPath);
 
-        if (!validationResource.checkingExistenceResource(BUCKET, newFromPath)) {
-            log.error("Resource not found (move): {}", newFromPath);
-            throw new ResourceNotFoundException("Resource not found: " + newFromPath);
+        if (!validationResource.checkingExistenceResource(BUCKET, fromPath)) {
+            log.error("Resource not found (move): {}", fromPath);
+            throw new ResourceNotFoundException("Resource not found: " + fromPath);
         }
-        if (validationResource.checkingExistenceResource(BUCKET, newToPath)) {
-            log.error("Resource already exists (move): {}", newToPath);
-            throw new ResourceAlreadyExistsException("Resource already exists: " + newToPath);
+        if (validationResource.checkingExistenceResource(BUCKET, toPath)) {
+            log.error("Resource already exists (move): {}", toPath);
+            throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(newFromPath)
+                            .prefix(fromPath)
                             .recursive(true)
                             .build()
             );
@@ -151,7 +148,7 @@ public class MinioStorageService implements StorageService {
                 Item result = item.get();
 
                 String newResourceName =
-                        newToPath + result.objectName().substring(newFromPath.length());
+                        toPath + result.objectName().substring(fromPath.length());
 
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
@@ -172,7 +169,7 @@ public class MinioStorageService implements StorageService {
                 );
             }
             log.info("Resource success move!");
-            return get(newToPath);
+            return get(toPath);
         } catch (Exception e) {
             log.error("Failed to move resource!");
             throw new StorageException("Failed to move resource!");
@@ -303,7 +300,11 @@ public class MinioStorageService implements StorageService {
 
         for (Result<Item> result : items) {
             try {
-                resources.add(getResourceFromItem(result.get()));
+                Item item = result.get();
+                if (item.objectName().equals(path)) {
+                    continue;
+                }
+                resources.add(getResourceFromItem(item));
             } catch (Exception e) {
                 log.error("Failed to get resource!");
                 throw new StorageException("Failed to get resource!");
@@ -400,66 +401,19 @@ public class MinioStorageService implements StorageService {
     }
 
     private Resource getResourceFromItem(Item item) {
-        Resource resource;
-        int index = item.objectName().lastIndexOf("/");
-        String path = item.objectName().substring(0, index + 1);
-        String name = getResourceNameFromPath(item.objectName());
+        String path = item.objectName();
+        int index = path.lastIndexOf("/");
+        String newPath = path.substring(0, index + 1);
+        String name = getResourceNameFromPath(path);
+        if (path.endsWith("/")) {
+            newPath = newPath.substring(0, path.length() -1);
+            int number = newPath.lastIndexOf("/");
+            newPath = newPath.substring(0, number + 1);
+        }
 
         if (item.isDir()) {
-             resource = resourceMapper.toFolder(path, name + "/");
-        } else {
-            resource = resourceMapper.toFile(path, name, item.size());
+             return resourceMapper.toFolder(newPath, name + "/");
         }
-        return resource;
-    }
-
-    private String deleteCloneFromEndPath(String path) {
-        log.info("Path before delete clone: {}", path);
-        if (path.endsWith("/")) {
-            String newPath = path.substring(0, path.length() - 1);
-            int index = newPath.lastIndexOf("/");
-            String nameResource = newPath.substring(index + 1);
-            newPath = newPath.substring(0, index + 1);
-            if (newPath.contains(nameResource)) {
-                path = newPath;
-            }
-        } else {
-            int slashIndex = path.lastIndexOf("/");
-            if (slashIndex >= 0) {
-                String parentPath = path.substring(0, slashIndex + 1);
-                String fileName = path.substring(slashIndex + 1);
-
-                if (fileName.length() % 2 == 0) {
-                    String halfName = fileName.substring(0, fileName.length() / 2);
-                    if (halfName.equals(fileName.substring(fileName.length() / 2))) {
-                        fileName = halfName;
-                    }
-                }
-                path = parentPath + fileName;
-            }
-        }
-        log.info("Path after delete clone: {}", path);
-        return path;
-    }
-
-    private String deleteCloneFromHalfPath (String path) {
-        String newPath = path;
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
-        }
-        log.info("New path: {}", path);
-        int lastSlashIndex = path.lastIndexOf("/");
-        String resourceName = path.substring(lastSlashIndex + 1);
-        path = path.substring(0, lastSlashIndex + 1);
-        log.info("Last new path: {}", path);
-
-        String newToPath = deleteCloneFromEndPath(path);
-        newToPath = deleteCloneFromEndPath(newToPath + resourceName);
-
-        if (newPath.endsWith("/")) {
-            newToPath = newToPath + "/";
-        }
-        log.info("New newPath: {}", newToPath);
-        return newToPath;
+        return resourceMapper.toFile(newPath, name, item.size());
     }
 }
