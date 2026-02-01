@@ -3,6 +3,7 @@ package com.example.cloud_storage.user.config;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,13 +28,25 @@ public class SecurityConfig {
                 .csrf(CsrfConfigurer::disable)
                 .authorizeHttpRequests(
                         auth -> auth
-                                        .requestMatchers("/api/auth/**").permitAll()
-                                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                                        .anyRequest()
-                                        .authenticated()
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                .requestMatchers("/", "/index.html", "/assets/**", "/config.js").permitAll()
+                                .anyRequest()
+                                .authenticated()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.getWriter().write("{\"message\":\"User not unauthorized\"}");
+                        })
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/sign-out")
+                        .logoutSuccessHandler(
+                                (request, response, authentication) ->
+                                        response.setStatus(HttpStatus.NO_CONTENT.value())
+                        )
+                        .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID"))
                 .formLogin(AbstractHttpConfigurer::disable);
         return httpSecurity.build();

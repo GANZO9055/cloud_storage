@@ -34,11 +34,7 @@ public class FolderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Resource>> getFolderContents(
-            @RequestParam
-            @Size(min = 1, max = 50)
-            @NotBlank
-            String path) {
+    public ResponseEntity<List<Resource>> getFolderContents(@RequestParam String path) {
         return new ResponseEntity<>(
                 directoryService.getFolderContents(path),
                 HttpStatus.OK

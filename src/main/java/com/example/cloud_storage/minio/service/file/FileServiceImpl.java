@@ -15,40 +15,41 @@ import java.util.List;
 public class FileServiceImpl implements FileService {
 
     private StorageService storageService;
+    private ValidationResource validationResource;
 
     @Override
     public Resource get(String path) {
-        ValidationResource.checkingPath(path);
+        validationResource.checkingPath(path);
         return storageService.get(path);
     }
 
     @Override
     public void delete(String path) {
-        ValidationResource.checkingPath(path);
+        validationResource.checkingPath(path);
         storageService.delete(path);
     }
 
     @Override
     public InputStream download(String path) {
-        ValidationResource.checkingPath(path);
+        validationResource.checkingPath(path);
         return storageService.download(path);
     }
 
     @Override
     public Resource move(String fromPath, String toPath) {
-        ValidationResource.checkingPath(fromPath);
+        validationResource.checkingPath(toPath);
         return storageService.move(fromPath, toPath);
     }
 
     @Override
     public List<Resource> search(String query) {
-        ValidationResource.checkingPath(query);
+        validationResource.checkingPath(query);
         return storageService.search(query);
     }
 
     @Override
     public List<Resource> upload(String path, List<MultipartFile> files) {
-        ValidationResource.checkingPath(path);
+        validationResource.checkingPath(path);
         return storageService.upload(path, files);
     }
 }
