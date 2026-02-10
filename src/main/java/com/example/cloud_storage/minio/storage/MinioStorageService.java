@@ -182,10 +182,11 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public List<Resource> search(String query) {
+        String rootFolder = String.format(ROOT_FOLDER, userUtil.getId());
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
-                        .prefix("")
+                        .prefix(rootFolder)
                         .recursive(true)
                         .build()
         );

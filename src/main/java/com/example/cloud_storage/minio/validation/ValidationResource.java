@@ -31,7 +31,7 @@ public class ValidationResource {
     }
 
     public void checkingPath(String path) {
-        if (!PATH_PATTERN.matcher(path).matches()) {
+        if (!PATH_PATTERN.matcher(path).matches() || path.contains("..") || path.contains("//")) {
             log.warn("Invalid characters in path");
             throw new InvalidPathException("Invalid characters in path");
         }
