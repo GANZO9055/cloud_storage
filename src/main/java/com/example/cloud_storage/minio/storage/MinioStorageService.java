@@ -212,6 +212,7 @@ public class MinioStorageService implements StorageService {
     @Override
     public List<Resource> upload(String path, List<MultipartFile> files) {
         String newPath = getFullPath(path);
+        int numberFiles = files.size();
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Resource already exists (upload): {}", newPath);
             throw new ResourceNotFoundException("Resource not found: " + newPath);
@@ -220,12 +221,21 @@ public class MinioStorageService implements StorageService {
         List<Resource> resources = new ArrayList<>();
 
         for (MultipartFile file : files) {
+            String checkPath;
             String originalName = file.getOriginalFilename();
             String objectName = newPath + originalName;
 
-            if (validationResource.checkingExistenceResource(BUCKET, objectName)) {
-                log.error("Resource already exists (upload): {}", objectName);
-                throw new ResourceAlreadyExistsException("File already exists: " + objectName);
+            if (originalName != null && originalName.contains("/")) {
+                int index = originalName.indexOf("/");
+                String name = originalName.substring(0, index + 1);
+                checkPath = newPath + name;
+            } else {
+                checkPath = objectName;
+            }
+
+            if ((numberFiles == files.size()) && validationResource.checkingExistenceResource(BUCKET, checkPath)) {
+                log.error("Resource already exists (upload): {}", checkPath);
+                throw new ResourceAlreadyExistsException("File already exists: " + checkPath);
             }
             try {
                 minioClient.putObject(
@@ -253,7 +263,7 @@ public class MinioStorageService implements StorageService {
                     getResourceNameFromPath(objectName),
                     file.getSize()
             );
-
+            numberFiles -= 1;
             resources.add(resource);
         }
         log.info("Resource success upload: {}", path);
