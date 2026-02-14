@@ -12,13 +12,19 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest
     container_name: minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -26,6 +32,13 @@ services:
     volumes:
       - minio-data:/data
     restart: unless-stopped
+    networks:
+      - app-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
@@ -37,7 +50,12 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - redis-net
+      - app-net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis-insight:
     image: redis/redisinsight:latest
@@ -50,7 +68,46 @@ services:
     volumes:
       - redis-insight-data:/data
     networks:
-      - redis-net
+      - app-net
+
+  cloud_storage:
+    build: .
+    container_name: cloud_storage
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_LIQUIBASE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_LIQUIBASE_USER: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_LIQUIBASE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_LIQUIBASE_DEFAULT_SCHEMA: ${DB_SCHEMA}
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD}
+      MINIO_URL: ${MINIO_URL}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - app-net
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:
@@ -58,5 +115,5 @@ volumes:
   redis-insight-data:
 
 networks:
-  redis-net:
+  app-net:
     driver: bridge
