@@ -13,3 +13,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  session:
+    store-type: none
+
+minio:
+  enabled: false
