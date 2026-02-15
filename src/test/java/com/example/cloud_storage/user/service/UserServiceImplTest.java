@@ -1,5 +1,6 @@
 package com.example.cloud_storage.user.service;
 
+import com.example.cloud_storage.minio.storage.MinioStorageService;
 import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.exception.user.UnauthorizedUserException;
 import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
@@ -51,6 +52,8 @@ class UserServiceImplTest {
     private HttpServletResponse response;
     @MockitoBean
     private HttpSession session;
+    @MockitoBean
+    private MinioStorageService minioStorageService;
 
     @BeforeEach
     void setUp() {
