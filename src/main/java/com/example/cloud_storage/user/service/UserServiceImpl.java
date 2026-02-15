@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
+    private static final String SPRING_SECURITY_ATTRIBUTE = "SPRING_SECURITY_CONTEXT";
+
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private AuthenticationManager authenticationManager;
@@ -62,7 +64,7 @@ public class UserServiceImpl implements UserService {
         securityContext.setAuthentication(authentication);
 
         HttpSession session = request.getSession(true);
-        session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
+        session.setAttribute(SPRING_SECURITY_ATTRIBUTE, securityContext);
 
         storageService.createRootFolder(savedUser.getId());
         return savedUser;
@@ -91,7 +93,7 @@ public class UserServiceImpl implements UserService {
         securityContext.setAuthentication(authentication);
 
         HttpSession session = request.getSession(true);
-        session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
+        session.setAttribute(SPRING_SECURITY_ATTRIBUTE, securityContext);
         return user;
     }
 }
