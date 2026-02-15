@@ -89,7 +89,7 @@ public class MinioStorageService implements StorageService {
         String newPath = getFullPath(path);
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Resource not found (delete): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + newPath);
+            throw new ResourceNotFoundException("Resource not found: " + path);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
@@ -120,7 +120,7 @@ public class MinioStorageService implements StorageService {
         String newPath = getFullPath(path);
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Resource not found (download): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + newPath);
+            throw new ResourceNotFoundException("Resource not found: " + path);
         }
         if (path.endsWith("/")) {
             return downloadFolder(newPath);
@@ -134,11 +134,11 @@ public class MinioStorageService implements StorageService {
         String newToPath = getFullPath(toPath);
         if (!validationResource.checkingExistenceResource(BUCKET, newFromPath)) {
             log.error("Resource not found (move): {}", newFromPath);
-            throw new ResourceNotFoundException("Resource not found: " + newFromPath);
+            throw new ResourceNotFoundException("Resource not found: " + fromPath);
         }
         if (validationResource.checkingExistenceResource(BUCKET, newToPath)) {
             log.error("Resource already exists (move): {}", newToPath);
-            throw new ResourceAlreadyExistsException("Resource already exists: " + newToPath);
+            throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
         }
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
@@ -215,7 +215,7 @@ public class MinioStorageService implements StorageService {
         int numberFiles = files.size();
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Resource already exists (upload): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + newPath);
+            throw new ResourceNotFoundException("Resource not found: " + path);
         }
 
         List<Resource> resources = new ArrayList<>();
@@ -286,7 +286,7 @@ public class MinioStorageService implements StorageService {
         }
         if (validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Folder already exists: {}", newPath);
-            throw new FolderAlreadyExistsException("Folder already exists: " + newPath);
+            throw new FolderAlreadyExistsException("Folder already exists: " + path);
         }
 
         createEmptyFolder(newPath);
@@ -302,7 +302,7 @@ public class MinioStorageService implements StorageService {
         String newPath = getFullPath(path);
         if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
             log.error("Folder not found: {}", newPath);
-            throw new FolderNotFoundException("Folder not found: " + newPath);
+            throw new FolderNotFoundException("Folder not found: " + path);
         }
         List<Resource> resources = new ArrayList<>();
 
