@@ -10,8 +10,6 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT_HOST}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - app-net
     healthcheck:
@@ -29,8 +27,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    volumes:
-      - minio-data:/data
     restart: unless-stopped
     networks:
       - app-net
@@ -65,8 +61,6 @@ services:
       - redis
     ports:
       - "${REDIS_INSIGHT_PORT_HOST}:5540"
-    volumes:
-      - redis-insight-data:/data
     networks:
       - app-net
 
@@ -108,11 +102,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-volumes:
-  postgres_data:
-  minio-data:
-  redis-insight-data:
 
 networks:
   app-net:
