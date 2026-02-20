@@ -2,7 +2,6 @@ package com.example.cloud_storage.user.controller;
 
 import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.user.dto.UserResponseDto;
-import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -64,18 +63,5 @@ public class AuthController {
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.OK
         );
-    }
-
-    @Operation(
-            summary = "Выход из аккаунта"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Пользователь вышел из аккаунта"),
-            @ApiResponse(responseCode = "401", description = "Запрос исполняется неавторизованным пользователем"),
-            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
-    })
-    @PostMapping("/sign-out")
-    public ResponseEntity<Void> logout() {
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
