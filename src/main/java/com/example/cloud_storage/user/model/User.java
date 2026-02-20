@@ -18,21 +18,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
-    @NotBlank(message = "Username cannot be empty!")
-    @Size(
-            min = 3,
-            max = 50,
-            message = "Length of the user must be from 3 to 50 characters!"
-    )
     private String username;
-
-    @NotBlank(message = "Password cannot be empty!")
-    @Size(
-            min = 4,
-            max = 100,
-            message = "Length of the password must be from 3 to 100 characters!"
-    )
     private String password;
 
     @Enumerated(EnumType.STRING)
