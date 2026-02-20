@@ -5,6 +5,7 @@ import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.exception.user.UnauthorizedUserException;
 import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
 import com.example.cloud_storage.exception.user.UsernameNotFoundException;
+import com.example.cloud_storage.user.dto.UserResponseDto;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,11 +66,9 @@ class UserServiceImplTest {
     void whenCreateUserThenSaveUserSuccess() {
         UserRequestDto userTest = new UserRequestDto("testUser", "testPassword");
 
-        User user = userService.create(userTest, request, response);
+        UserResponseDto user = userService.create(userTest, request, response);
 
-        assertThat(user.getId()).isNotNull();
         assertEquals(userTest.getUsername(), user.getUsername());
-        assertTrue(passwordEncoder.matches(userTest.getPassword(), user.getPassword()));
     }
 
     @Test
@@ -89,13 +88,11 @@ class UserServiceImplTest {
     void whenCreateUserThenAuthenticationUserSuccess() {
         UserRequestDto userTest = new UserRequestDto("testUser", "testPassword");
 
-        User savedUser = userService.create(userTest, request, response);
+        UserResponseDto savedUser = userService.create(userTest, request, response);
 
-        User authUser = userService.authenticate(userTest, request, response);
+        UserResponseDto authUser = userService.authenticate(userTest, request, response);
 
-        assertEquals(savedUser.getId(), authUser.getId());
         assertEquals(savedUser.getUsername(), authUser.getUsername());
-        assertTrue(passwordEncoder.matches(userTest.getPassword(), authUser.getPassword()));
     }
 
     @Test
