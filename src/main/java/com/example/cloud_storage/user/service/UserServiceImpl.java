@@ -5,6 +5,8 @@ import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.exception.user.UnauthorizedUserException;
 import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
 import com.example.cloud_storage.exception.user.UsernameNotFoundException;
+import com.example.cloud_storage.user.dto.UserResponseDto;
+import com.example.cloud_storage.user.mapper.UserMapper;
 import com.example.cloud_storage.user.model.Role;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
@@ -32,46 +34,32 @@ public class UserServiceImpl implements UserService {
     private PasswordEncoder passwordEncoder;
     private AuthenticationManager authenticationManager;
     private StorageService storageService;
+    private UserMapper userMapper;
 
     @Override
-    public User create(UserRequestDto userRequestDto,
-                       HttpServletRequest request,
-                       HttpServletResponse response) {
-        if (userRepository.findByUsername(userRequestDto.getUsername()).isPresent()) {
-            log.warn("Registration failed: username={} already exists", userRequestDto.getUsername());
-            throw new UserAlreadyExistsException("User is already busy!");
-        }
-
+    public UserResponseDto create(UserRequestDto userRequestDto,
+                                  HttpServletRequest request,
+                                  HttpServletResponse response) {
+        validateUserNotExists(userRequestDto);
         User savedUser;
         try {
-            User user = new User();
-            user.setUsername(userRequestDto.getUsername());
-            user.setPassword(passwordEncoder.encode(userRequestDto.getPassword()));
-            user.setRole(Role.USER);
+            User user = userMapper.toUser(
+                    userRequestDto.getUsername(),
+                    passwordEncoder.encode(userRequestDto.getPassword())
+            );
             savedUser = userRepository.save(user);
         } catch (Exception exception) {
             log.error("Error while registration user username={}", userRequestDto.getUsername());
             throw new RuntimeException(exception);
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        userRequestDto.getUsername(),
-                        userRequestDto.getPassword()
-                )
-        );
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        securityContext.setAuthentication(authentication);
-
-        HttpSession session = request.getSession(true);
-        session.setAttribute(SPRING_SECURITY_ATTRIBUTE, securityContext);
-
-        storageService.createRootFolder(savedUser.getId());
-        return savedUser;
+        authenticationUser(userRequestDto, request);
+        createRootFolder(savedUser.getId());
+        return userMapper.toUserResponse(savedUser.getUsername());
     }
 
     @Override
-    public User authenticate(UserRequestDto userRequestDto,
+    public UserResponseDto authenticate(UserRequestDto userRequestDto,
                              HttpServletRequest request,
                              HttpServletResponse response) {
         User user = userRepository.findByUsername(userRequestDto.getUsername())
@@ -83,6 +71,22 @@ public class UserServiceImpl implements UserService {
             log.warn("Authentication failed: invalid password for username={}", userRequestDto.getUsername());
             throw new UnauthorizedUserException("Invalid password!");
         }
+        authenticationUser(userRequestDto, request);
+        return userMapper.toUserResponse(user.getUsername());
+    }
+
+    private void createRootFolder(Integer id) {
+        storageService.createRootFolder(id);
+    }
+
+    private void validateUserNotExists(UserRequestDto userRequestDto) {
+        if (userRepository.findByUsername(userRequestDto.getUsername()).isPresent()) {
+            log.warn("Registration failed: username={} already exists", userRequestDto.getUsername());
+            throw new UserAlreadyExistsException("User is already busy!");
+        }
+    }
+
+    private void authenticationUser(UserRequestDto userRequestDto, HttpServletRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         userRequestDto.getUsername(),
@@ -94,6 +98,5 @@ public class UserServiceImpl implements UserService {
 
         HttpSession session = request.getSession(true);
         session.setAttribute(SPRING_SECURITY_ATTRIBUTE, securityContext);
-        return user;
     }
 }

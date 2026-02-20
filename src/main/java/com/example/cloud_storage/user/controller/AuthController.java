@@ -40,7 +40,7 @@ public class AuthController {
     public ResponseEntity<UserResponseDto> registration(@Valid @RequestBody UserRequestDto userRequestDto,
                                                         HttpServletRequest request,
                                                         HttpServletResponse response) {
-        User user = userService.create(userRequestDto, request, response);
+        UserResponseDto user = userService.create(userRequestDto, request, response);
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.CREATED
@@ -59,7 +59,7 @@ public class AuthController {
     public ResponseEntity<UserResponseDto> authorization(@Valid @RequestBody UserRequestDto userRequestDto,
                                                          HttpServletRequest request,
                                                          HttpServletResponse response) {
-        User user = userService.authenticate(userRequestDto, request, response);
+        UserResponseDto user = userService.authenticate(userRequestDto, request, response);
         return new ResponseEntity<>(
                 new UserResponseDto(user.getUsername()),
                 HttpStatus.OK
