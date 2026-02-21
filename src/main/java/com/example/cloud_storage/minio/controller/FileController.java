@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,7 +38,11 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
     @GetMapping
-    public ResponseEntity<Resource> getResource(@RequestParam String path) {
+    public ResponseEntity<Resource> getResource(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank
+            String path) {
         return ResponseEntity.ok(fileService.get(path));
     }
 
@@ -51,7 +57,11 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
     @DeleteMapping
-    public ResponseEntity<Void> deleteResource(@RequestParam String path) {
+    public ResponseEntity<Void> deleteResource(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank
+            String path) {
         fileService.delete(path);
         return ResponseEntity.noContent().build();
     }
@@ -67,7 +77,11 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
     @GetMapping("/download")
-    public ResponseEntity<StreamingResponseBody> downloadResource(@RequestParam String path) {
+    public ResponseEntity<StreamingResponseBody> downloadResource(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank
+            String path) {
         InputStream inputStream = fileService.download(path);
 
         StreamingResponseBody stream = outputStream -> {
@@ -91,8 +105,14 @@ public class FileController {
             @ApiResponse(responseCode = "409", description = "Ресурс, лежащий на пути to уже существует"),
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
-    @GetMapping("/move")
-    public ResponseEntity<Resource> moveResource(@RequestParam String from, @RequestParam String to) {
+    @PutMapping("/move")
+    public ResponseEntity<Resource> moveResource(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank String from,
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank String to) {
         return ResponseEntity.ok(fileService.move(from, to));
     }
 
@@ -106,7 +126,11 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
     @GetMapping("/search")
-    public ResponseEntity<List<Resource>> searchResource(@RequestParam String query) {
+    public ResponseEntity<List<Resource>> searchResource(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank
+            String query) {
         return ResponseEntity.ok(fileService.search(query));
     }
 
@@ -122,7 +146,9 @@ public class FileController {
     })
     @PostMapping
     public ResponseEntity<List<Resource>> uploadResource(
-            @RequestParam("path") String path,
+            @RequestParam("path")
+            @Size(max = 500)
+            @NotBlank String path,
             @RequestParam("object") List<MultipartFile> files) {
         return ResponseEntity.status(HttpStatus.CREATED).body(fileService.upload(path, files));
     }

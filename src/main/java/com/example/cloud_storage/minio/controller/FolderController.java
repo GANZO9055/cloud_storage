@@ -40,7 +40,7 @@ public class FolderController {
     @PostMapping
     public ResponseEntity<FolderResponseDto> createFolder(
             @RequestParam
-            @Size(min = 1, max = 50)
+            @Size(max = 500)
             @NotBlank
             String path) {
         return new ResponseEntity<>(
@@ -60,7 +60,11 @@ public class FolderController {
             @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
     })
     @GetMapping
-    public ResponseEntity<List<Resource>> getFolderContents(@RequestParam String path) {
+    public ResponseEntity<List<Resource>> getFolderContents(
+            @RequestParam
+            @Size(max = 500)
+            @NotBlank
+            String path) {
         return new ResponseEntity<>(
                 directoryService.getFolderContents(path),
                 HttpStatus.OK
