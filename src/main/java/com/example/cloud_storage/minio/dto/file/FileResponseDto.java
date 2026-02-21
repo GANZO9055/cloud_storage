@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Schema(description = "Файл")
-public class FileResponseDto extends Resource {
+public class FileResponseDto implements Resource {
     @Schema(description = "Путь до файла", example = "test1/test2/")
     private String path;
     @Schema(description = "Имя файла", example = "test3.txt")

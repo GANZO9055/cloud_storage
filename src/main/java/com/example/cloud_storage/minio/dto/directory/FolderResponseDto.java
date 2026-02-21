@@ -10,7 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class FolderResponseDto extends Resource {
+public class FolderResponseDto implements Resource {
     @Schema(description = "Путь до папки", example = "test1/test2/")
     private String path;
     @Schema(description = "Имя папки", example = "test3/")
