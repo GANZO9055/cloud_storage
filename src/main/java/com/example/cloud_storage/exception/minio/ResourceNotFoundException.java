@@ -1,6 +1,8 @@
 package com.example.cloud_storage.exception.minio;
 
-public class ResourceNotFoundException extends RuntimeException {
+import com.example.cloud_storage.exception.CloudStorageException;
+
+public class ResourceNotFoundException extends CloudStorageException {
     public ResourceNotFoundException(String message) {
         super(message);
     }

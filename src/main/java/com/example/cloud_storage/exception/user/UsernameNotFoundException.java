@@ -1,6 +1,8 @@
 package com.example.cloud_storage.exception.user;
 
-public class UsernameNotFoundException extends RuntimeException {
+import com.example.cloud_storage.exception.CloudStorageException;
+
+public class UsernameNotFoundException extends CloudStorageException {
     public UsernameNotFoundException(String message) {
         super(message);
     }

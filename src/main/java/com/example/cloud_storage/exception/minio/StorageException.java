@@ -1,6 +1,8 @@
 package com.example.cloud_storage.exception.minio;
 
-public class StorageException extends RuntimeException {
+import com.example.cloud_storage.exception.CloudStorageException;
+
+public class StorageException extends CloudStorageException {
     public StorageException(String message) {
         super(message);
     }

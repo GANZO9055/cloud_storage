@@ -1,6 +1,8 @@
 package com.example.cloud_storage.exception.user;
 
-public class UnauthorizedUserException extends RuntimeException {
+import com.example.cloud_storage.exception.CloudStorageException;
+
+public class UnauthorizedUserException extends CloudStorageException {
     public UnauthorizedUserException(String message) {
         super(message);
     }

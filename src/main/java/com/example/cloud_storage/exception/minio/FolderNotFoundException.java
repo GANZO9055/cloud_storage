@@ -1,6 +1,8 @@
 package com.example.cloud_storage.exception.minio;
 
-public class FolderNotFoundException extends RuntimeException {
+import com.example.cloud_storage.exception.CloudStorageException;
+
+public class FolderNotFoundException extends CloudStorageException {
     public FolderNotFoundException(String message) {
         super(message);
     }
