@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "User", description = "Операции с пользователями")
 public class UserController {
 
-    private UserUtil userUtil;
-
     @Operation(
             summary = "Получить текущего пользователя"
     )
@@ -32,7 +30,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentUser() {
         return new ResponseEntity<>(
-                new UserResponseDto(userUtil.getUsername()),
+                new UserResponseDto(UserUtil.getUsername()),
                 HttpStatus.OK
         );
     }

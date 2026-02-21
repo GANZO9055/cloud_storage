@@ -34,7 +34,6 @@ public class MinioStorageService implements StorageService {
     private MinioClient minioClient;
     private ResourceMapper resourceMapper;
     private ValidationResource validationResource;
-    private UserUtil userUtil;
 
     @PostConstruct
     public void initStorage() {
@@ -182,7 +181,7 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public List<Resource> search(String query) {
-        String rootFolder = String.format(ROOT_FOLDER, userUtil.getId());
+        String rootFolder = String.format(ROOT_FOLDER, UserUtil.getId());
         Iterable<Result<Item>> items = minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
@@ -436,7 +435,7 @@ public class MinioStorageService implements StorageService {
     }
 
     private String getFullPath(String path) {
-        String rootFolder = String.format(ROOT_FOLDER, userUtil.getId());
+        String rootFolder = String.format(ROOT_FOLDER, UserUtil.getId());
         return rootFolder + path;
     }
 }
