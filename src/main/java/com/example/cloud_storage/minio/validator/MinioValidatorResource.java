@@ -1,7 +1,7 @@
 package com.example.cloud_storage.minio.validator;
 
-import io.minio.ListObjectsArgs;
-import io.minio.MinioClient;
+import com.example.cloud_storage.minio.repository.FileMetadataRepository;
+import com.example.cloud_storage.user.util.UserUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -9,17 +9,9 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class MinioValidatorResource {
 
-    private MinioClient minioClient;
+    private FileMetadataRepository metadataRepository;
 
-    public boolean checkingExistenceResource(String bucket, String path) {
-        var resources = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(bucket)
-                        .prefix(path)
-                        .recursive(false)
-                        .maxKeys(1)
-                        .build()
-        );
-        return resources.iterator().hasNext();
+    public boolean checkingExistenceResource(String path) {
+        return metadataRepository.existsByUserIdAndPath(UserUtil.getId(), path);
     }
 }
