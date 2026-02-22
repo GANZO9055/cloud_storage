@@ -1,6 +1,6 @@
 package com.example.cloud_storage;
 
-import com.example.cloud_storage.minio.storage.MinioStorageService;
+import com.example.cloud_storage.storage.MinioStorageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;

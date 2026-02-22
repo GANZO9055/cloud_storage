@@ -1,13 +1,13 @@
 package com.example.cloud_storage.user.service;
 
-import com.example.cloud_storage.minio.storage.MinioStorageService;
-import com.example.cloud_storage.user.dto.UserRequestDto;
+import com.example.cloud_storage.storage.MinioStorageService;
+import com.example.cloud_storage.dto.request.UserRequestDto;
 import com.example.cloud_storage.exception.user.UnauthorizedUserException;
 import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
 import com.example.cloud_storage.exception.user.UsernameNotFoundException;
-import com.example.cloud_storage.user.dto.UserResponseDto;
-import com.example.cloud_storage.user.model.User;
-import com.example.cloud_storage.user.repository.UserRepository;
+import com.example.cloud_storage.dto.response.UserResponseDto;
+import com.example.cloud_storage.repository.UserRepository;
+import com.example.cloud_storage.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
