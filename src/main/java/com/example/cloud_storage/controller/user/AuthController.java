@@ -1,5 +1,6 @@
 package com.example.cloud_storage.controller.user;
 
+import com.example.cloud_storage.api.AuthControllerApi;
 import com.example.cloud_storage.dto.request.UserRequestDto;
 import com.example.cloud_storage.dto.response.UserResponseDto;
 import com.example.cloud_storage.service.user.UserService;
@@ -21,20 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/auth")
-@Tag(name = "Auth", description = "Регистрация и авторизация пользователей")
-public class AuthController {
+public class AuthController implements AuthControllerApi {
 
     private UserService userService;
 
-    @Operation(
-            summary = "Регистрация пользователей"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Пользователь зарегистрирован"),
-            @ApiResponse(responseCode = "400", description = "Ошибка валидации"),
-            @ApiResponse(responseCode = "409", description = "Пользователь уже существует"),
-            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
-    })
     @PostMapping("/sign-up")
     public ResponseEntity<UserResponseDto> registration(@Valid @RequestBody UserRequestDto userRequestDto,
                                                         HttpServletRequest request,
@@ -45,15 +36,7 @@ public class AuthController {
                 HttpStatus.CREATED
         );
     }
-    @Operation(
-            summary = "Авторизация пользователя"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Пользователь авторизован"),
-            @ApiResponse(responseCode = "400", description = "Ошибка валидации"),
-            @ApiResponse(responseCode = "401", description = "Неверные данные"),
-            @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
-    })
+
     @PostMapping("/sign-in")
     public ResponseEntity<UserResponseDto> authorization(@Valid @RequestBody UserRequestDto userRequestDto,
                                                          HttpServletRequest request,
