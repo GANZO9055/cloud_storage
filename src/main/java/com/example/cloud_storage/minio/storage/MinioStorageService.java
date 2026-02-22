@@ -1,11 +1,6 @@
 package com.example.cloud_storage.minio.storage;
 
 import com.example.cloud_storage.exception.minio.*;
-import com.example.cloud_storage.minio.dto.Resource;
-import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
-import com.example.cloud_storage.minio.mapper.ResourceMapper;
-import com.example.cloud_storage.minio.validation.ValidationResource;
-import com.example.cloud_storage.user.util.UserUtil;
 import io.minio.*;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
@@ -18,8 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -29,11 +23,9 @@ import java.util.zip.ZipOutputStream;
 public class MinioStorageService implements StorageService {
 
     private static final String BUCKET = "user-files";
-    private static final String ROOT_FOLDER = "user-%s-files/";
+
 
     private MinioClient minioClient;
-    private ResourceMapper resourceMapper;
-    private ValidationResource validationResource;
 
     @PostConstruct
     public void initStorage() {
@@ -57,93 +49,47 @@ public class MinioStorageService implements StorageService {
     }
 
     @Override
-    public Resource get(String path) {
-        if (!validationResource.checkingExistenceResource(BUCKET, path)) {
-            log.error("Resource not found (get): {}", path);
-            throw new ResourceNotFoundException("Resource not found: " + path);
-        }
-        try {
-            Iterable<Result<Item>> items = minioClient.listObjects(
+    public Iterable<Result<Item>> get(String path) {
+            return minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
                             .prefix(path)
                             .recursive(false)
                             .build()
             );
-            for (Result<Item> itemResult : items) {
-                Item result = itemResult.get();
-                if (!path.endsWith("/")) {
-                    return resourceMapper.toFile(path, getResourceNameFromPath(path), result.size());
-                }
-            }
-            return resourceMapper.toFolder(path, getResourceNameFromPath(path));
-        } catch (Exception e) {
-            log.error("Failed to get resource info: {}", path);
-            throw new StorageException("Failed to get resource information!");
-        }
     }
 
     @Override
     public void delete(String path) {
-        String newPath = getFullPath(path);
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Resource not found (delete): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + path);
-        }
         try {
-            Iterable<Result<Item>> items = minioClient.listObjects(
-                    ListObjectsArgs.builder()
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(newPath)
-                            .recursive(true)
+                            .object(path)
                             .build()
             );
-            for (Result<Item> item : items) {
-                log.info("Info: {}", item.get().objectName());
-                minioClient.removeObject(
-                        RemoveObjectArgs.builder()
-                                .bucket(BUCKET)
-                                .object(item.get().objectName())
-                                .build()
-                );
-            }
             log.info("Resource deleted: {}", path);
         } catch (Exception e) {
-            log.error("Resource deleted: {}", path);
+            log.error("Failed to delete resource: {}", path);
             throw new StorageException("Failed to delete resource!");
         }
     }
 
     @Override
     public InputStream download(String path) {
-        String newPath = getFullPath(path);
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Resource not found (download): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + path);
-        }
         if (path.endsWith("/")) {
-            return downloadFolder(newPath);
+            return downloadFolder(path);
         }
-        return downloadFile(newPath);
+        return downloadFile(path);
     }
 
     @Override
-    public Resource move(String fromPath, String toPath) {
-        String newFromPath = getFullPath(fromPath);
-        String newToPath = getFullPath(toPath);
-        if (!validationResource.checkingExistenceResource(BUCKET, newFromPath)) {
-            log.error("Resource not found (move): {}", newFromPath);
-            throw new ResourceNotFoundException("Resource not found: " + fromPath);
-        }
-        if (validationResource.checkingExistenceResource(BUCKET, newToPath)) {
-            log.error("Resource already exists (move): {}", newToPath);
-            throw new ResourceAlreadyExistsException("Resource already exists: " + toPath);
-        }
+    public void move(String fromPath, String toPath) {
         try {
             Iterable<Result<Item>> items = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(BUCKET)
-                            .prefix(newFromPath)
+                            .prefix(fromPath)
                             .recursive(true)
                             .build()
             );
@@ -151,7 +97,7 @@ public class MinioStorageService implements StorageService {
                 Item result = item.get();
 
                 String newResourceName =
-                        newToPath + result.objectName().substring(newFromPath.length());
+                        toPath + result.objectName().substring(fromPath.length());
 
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
@@ -172,7 +118,6 @@ public class MinioStorageService implements StorageService {
                 );
             }
             log.info("Resource success move!");
-            return get(newToPath);
         } catch (Exception e) {
             log.error("Failed to move resource!");
             throw new StorageException("Failed to move resource!");
@@ -180,157 +125,44 @@ public class MinioStorageService implements StorageService {
     }
 
     @Override
-    public List<Resource> search(String query) {
-        String rootFolder = String.format(ROOT_FOLDER, UserUtil.getId());
-        Iterable<Result<Item>> items = minioClient.listObjects(
-                ListObjectsArgs.builder()
-                        .bucket(BUCKET)
-                        .prefix(rootFolder)
-                        .recursive(true)
-                        .build()
-        );
-
-        List<Resource> resources = new ArrayList<>();
-
-        for (Result<Item> item : items) {
-            try {
-                Item result = item.get();
-                String pathName = result.objectName();
-                if (pathName.contains(query)) {
-                    resources.add(getResourceFromItem(result));
-                }
-            } catch (Exception e) {
-                log.error("Search failed!");
-                throw new StorageException("Search failed!");
-            }
-        }
-        log.info("Search success");
-        return resources;
-    }
-
-    @Override
-    public List<Resource> upload(String path, List<MultipartFile> files) {
-        String newPath = getFullPath(path);
-        int numberFiles = files.size();
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Resource already exists (upload): {}", newPath);
-            throw new ResourceNotFoundException("Resource not found: " + path);
-        }
-
-        List<Resource> resources = new ArrayList<>();
-
-        for (MultipartFile file : files) {
-            String checkPath;
-            String originalName = file.getOriginalFilename();
-            String objectName = newPath + originalName;
-
-            if (originalName != null && originalName.contains("/")) {
-                int index = originalName.indexOf("/");
-                String name = originalName.substring(0, index + 1);
-                checkPath = newPath + name;
-            } else {
-                checkPath = objectName;
-            }
-
-            if ((numberFiles == files.size()) && validationResource.checkingExistenceResource(BUCKET, checkPath)) {
-                log.error("Resource already exists (upload): {}", checkPath);
-                throw new ResourceAlreadyExistsException("File already exists: " + checkPath);
-            }
-            try {
-                minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(BUCKET)
-                                .object(objectName)
-                                .stream(
-                                        file.getInputStream(),
-                                        file.getSize(),
-                                        -1
-                                )
-                                .contentType(file.getContentType())
-                                .build()
-                );
-            } catch (IOException e) {
-                log.error("Failed read file!");
-                throw new StorageException("Failed read file!");
-            } catch (Exception e) {
-                log.error("Upload failed!");
-                throw new StorageException("Upload failed!");
-            }
-
-            Resource resource = resourceMapper.toFile(
-                    path,
-                    getResourceNameFromPath(objectName),
-                    file.getSize()
+    public void upload(String path, MultipartFile file) {
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(BUCKET)
+                            .object(path)
+                            .stream(
+                                    file.getInputStream(),
+                                    file.getSize(),
+                                    -1
+                            )
+                            .contentType(file.getContentType())
+                            .headers(Map.of("If-None-Match", "*"))
+                            .build()
             );
-            numberFiles -= 1;
-            resources.add(resource);
+        } catch (IOException e) {
+            log.error("Failed read file!");
+            throw new StorageException("Failed read file!");
+        } catch (Exception e) {
+            log.error("Upload failed!");
+            throw new StorageException("Upload failed!");
         }
-        log.info("Resource success upload: {}", path);
-        return resources;
     }
 
     @Override
-    public void createRootFolder(Integer id) {
-        String rootFolder = String.format(ROOT_FOLDER, id);
-        createEmptyFolder(rootFolder);
-    }
-
-    @Override
-    public FolderResponseDto createFolder(String path) {
-        String newPath = getFullPath(path);
-
-        if (!(newPath.contains("user-") && newPath.contains("-files/"))) {
-            log.error("Parent folder not found!");
-            throw new ParentFolderNotFoundException("Parent folder not found!");
-        }
-        if (validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Folder already exists: {}", newPath);
-            throw new FolderAlreadyExistsException("Folder already exists: " + path);
-        }
-
-        createEmptyFolder(newPath);
-
-        FolderResponseDto dto = resourceMapper.toFolder(path, getResourceNameFromPath(newPath));
-        log.info("Folder success create");
-
-        return dto;
-    }
-
-    @Override
-    public List<Resource> getFolderContents(String path) {
-        String newPath = getFullPath(path);
-        if (!validationResource.checkingExistenceResource(BUCKET, newPath)) {
-            log.error("Folder not found: {}", newPath);
-            throw new FolderNotFoundException("Folder not found: " + path);
-        }
-        List<Resource> resources = new ArrayList<>();
-
-        Iterable<Result<Item>> items = minioClient.listObjects(
+    public Iterable<Result<Item>> getFolderContents(String path) {
+        return minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(BUCKET)
-                        .prefix(newPath)
+                        .prefix(path)
                         .delimiter("/")
                         .recursive(false)
                         .build()
         );
-
-        for (Result<Item> result : items) {
-            try {
-                Item item = result.get();
-                if (item.objectName().equals(newPath)) {
-                    continue;
-                }
-                resources.add(getResourceFromItem(item));
-            } catch (Exception e) {
-                log.error("Failed to get resource!");
-                throw new StorageException("Failed to get resource!");
-            }
-        }
-        log.info("Contents folder success get");
-        return resources;
     }
 
-    private void createEmptyFolder(String path) {
+    @Override
+    public void createEmptyFolder(String path) {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -397,45 +229,5 @@ public class MinioStorageService implements StorageService {
             log.error("Failed download file!");
             throw new StorageException("Failed download file!");
         }
-    }
-
-    private String getResourceNameFromPath(String path) {
-        String newPath = path;
-        if (path.endsWith("/")) {
-            newPath = path.substring(0, path.length() - 1);
-        }
-        int index = newPath.lastIndexOf("/");
-        if (index >= 0) {
-            newPath = newPath.substring(index + 1);
-        }
-        return newPath;
-    }
-
-    private Resource getResourceFromItem(Item item) {
-        String path = item.objectName();
-
-        int slashIndex = path.indexOf("/");
-        path = path.substring(slashIndex + 1);
-
-        int index = path.lastIndexOf("/");
-        String newPath = path.substring(0, index + 1);
-
-        String name = getResourceNameFromPath(path);
-
-        if (path.endsWith("/")) {
-            newPath = newPath.substring(0, path.length() -1);
-            int number = newPath.lastIndexOf("/");
-            newPath = newPath.substring(0, number + 1);
-        }
-
-        if (item.isDir()) {
-             return resourceMapper.toFolder(newPath, name + "/");
-        }
-        return resourceMapper.toFile(newPath, name, item.size());
-    }
-
-    private String getFullPath(String path) {
-        String rootFolder = String.format(ROOT_FOLDER, UserUtil.getId());
-        return rootFolder + path;
     }
 }
