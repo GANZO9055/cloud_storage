@@ -1,7 +1,7 @@
 package com.example.cloud_storage.minio.controller;
 
 import com.example.cloud_storage.minio.dto.Resource;
-import com.example.cloud_storage.minio.service.file.FileService;
+import com.example.cloud_storage.minio.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -25,7 +25,7 @@ import java.util.List;
 @Tag(name = "File", description = "Работа с файлами")
 public class FileController {
 
-    private FileService fileService;
+    private ResourceService resourceService;
 
     @Operation(
             summary = "Получение ресурса"
@@ -43,7 +43,7 @@ public class FileController {
             @Size(max = 500)
             @NotBlank
             String path) {
-        return ResponseEntity.ok(fileService.get(path));
+        return ResponseEntity.ok(resourceService.get(path));
     }
 
     @Operation(
@@ -62,7 +62,7 @@ public class FileController {
             @Size(max = 500)
             @NotBlank
             String path) {
-        fileService.delete(path);
+        resourceService.delete(path);
         return ResponseEntity.noContent().build();
     }
 
@@ -82,7 +82,7 @@ public class FileController {
             @Size(max = 500)
             @NotBlank
             String path) {
-        InputStream inputStream = fileService.download(path);
+        InputStream inputStream = resourceService.download(path);
 
         StreamingResponseBody stream = outputStream -> {
             try (inputStream) {
@@ -113,7 +113,7 @@ public class FileController {
             @RequestParam
             @Size(max = 500)
             @NotBlank String to) {
-        return ResponseEntity.ok(fileService.move(from, to));
+        return ResponseEntity.ok(resourceService.move(from, to));
     }
 
     @Operation(
@@ -131,7 +131,7 @@ public class FileController {
             @Size(max = 500)
             @NotBlank
             String query) {
-        return ResponseEntity.ok(fileService.search(query));
+        return ResponseEntity.ok(resourceService.search(query));
     }
 
     @Operation(
@@ -150,6 +150,6 @@ public class FileController {
             @Size(max = 500)
             @NotBlank String path,
             @RequestParam("object") List<MultipartFile> files) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(fileService.upload(path, files));
+        return ResponseEntity.status(HttpStatus.CREATED).body(resourceService.upload(path, files));
     }
 }

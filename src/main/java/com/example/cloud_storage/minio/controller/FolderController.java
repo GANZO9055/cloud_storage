@@ -2,7 +2,7 @@ package com.example.cloud_storage.minio.controller;
 
 import com.example.cloud_storage.minio.dto.Resource;
 import com.example.cloud_storage.minio.dto.directory.FolderResponseDto;
-import com.example.cloud_storage.minio.service.directory.FolderService;
+import com.example.cloud_storage.minio.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,7 +24,7 @@ import java.util.List;
 @Tag(name = "Folder", description = "Операции с папками")
 public class FolderController {
 
-    private FolderService directoryService;
+    private ResourceService resourceService;
 
     @Operation(
             summary = "Создать папку"
@@ -44,7 +44,7 @@ public class FolderController {
             @NotBlank
             String path) {
         return new ResponseEntity<>(
-                directoryService.createFolder(path),
+                resourceService.createFolder(path),
                 HttpStatus.CREATED
         );
     }
@@ -66,7 +66,7 @@ public class FolderController {
             @NotBlank
             String path) {
         return new ResponseEntity<>(
-                directoryService.getFolderContents(path),
+                resourceService.getFolderContents(path),
                 HttpStatus.OK
         );
     }
