@@ -1,13 +1,12 @@
 package com.example.cloud_storage.user.service;
 
-import com.example.cloud_storage.minio.storage.StorageService;
+import com.example.cloud_storage.minio.service.ResourceService;
 import com.example.cloud_storage.user.dto.UserRequestDto;
 import com.example.cloud_storage.exception.user.UnauthorizedUserException;
 import com.example.cloud_storage.exception.user.UserAlreadyExistsException;
 import com.example.cloud_storage.exception.user.UsernameNotFoundException;
 import com.example.cloud_storage.user.dto.UserResponseDto;
 import com.example.cloud_storage.user.mapper.UserMapper;
-import com.example.cloud_storage.user.model.Role;
 import com.example.cloud_storage.user.model.User;
 import com.example.cloud_storage.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +32,7 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private AuthenticationManager authenticationManager;
-    private StorageService storageService;
+    private ResourceService resourceService;
     private UserMapper userMapper;
 
     @Override
@@ -76,7 +75,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void createRootFolder(Integer id) {
-        storageService.createRootFolder(id);
+        resourceService.createRootFolder(id);
     }
 
     private void validateUserNotExists(UserRequestDto userRequestDto) {
