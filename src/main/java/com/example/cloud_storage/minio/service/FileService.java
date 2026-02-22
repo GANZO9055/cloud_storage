@@ -1,4 +1,4 @@
-package com.example.cloud_storage.minio.service.file;
+package com.example.cloud_storage.minio.service;
 
 import com.example.cloud_storage.minio.dto.Resource;
 import org.springframework.web.multipart.MultipartFile;
